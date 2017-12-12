@@ -1,4 +1,5 @@
 use std::fs::File;
+// use std::io::{Write, BufWriter};
 use std::io::prelude::*;
 
 #[macro_use]
@@ -6,11 +7,14 @@ extern crate clap;
 use clap::{Arg, App};
 
 extern crate geo;
-use geo::{Polygon};
+// use geo::{Polygon, Point};
 
 extern crate geojson;
-use geojson::{GeoJson, Geometry, Value};
+use geojson::{GeoJson, Geometry, Value, Feature, FeatureCollection};
 use geojson::conversion::TryInto;
+
+extern crate serde_json;
+use serde_json::{Map};
 
 extern crate polylabel;
 use polylabel::polylabel;
@@ -22,7 +26,7 @@ fn main() {
        .about("Find optimum label positions for polygons")
        .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 1.0'")
        .arg(Arg::with_name("GEOJSON")
-                .help("A GeoJSON file representing a polygon")
+                .help("GeoJSON with a FeatureCollection containing one or more polygons")
                 .index(1)
                 .required(true))
        .get_matches();
@@ -34,31 +38,47 @@ fn main() {
     f.read_to_string(&mut contents)
         .expect("Unable to read file");
     let gj = contents.parse::<GeoJson>().unwrap();
-    match gj {
+    let results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => {
-            let geometries: Vec<Polygon<f64>> = fc.features
+            fc.features
                 .into_iter()
                 .filter_map(|feature| match feature.geometry {
                                 Some(geometry) => {
                                     match geometry.value {
-                                        Value::Polygon(_) => geometry.value.try_into().ok(),
+                                        Value::Polygon(_) => Some(polylabel(&geometry.value.try_into().unwrap(), &tolerance)),
                                         Value::Point(_) => None,
                                         _ => None,
                                     }
                                 }
                                 _ => None,
                             })
-                .collect();
-            println!("{:?}", geometries);
+                .map(|p| Some(p))
+                .collect()
+        },
+        GeoJson::Feature(_) => {
+            vec![None]
+        },
+        GeoJson::Geometry(_) => {
+            vec![None]
         }
-        GeoJson::Feature(f) => {
-            println!("{:?}", f.bbox);
-            println!("{:?}", f.bbox);
-        }
-        GeoJson::Geometry(g) => {
-            println!("{:?}", g.value);
-            println!("{:?}", g.value);
-        }
-    }
-
+    };
+    // now build an output geojson
+    let feature_collection = FeatureCollection {
+        bbox: None,
+        features: results
+            .into_iter().map(|point| Value::from(&point.unwrap()))
+            .map(|geom|Feature {
+                bbox: None,
+                geometry: Some(Geometry::new(geom)),
+                id: None,
+                properties: Some(Map::new()),
+                foreign_members: None })
+            .collect(),
+        foreign_members: None,
+    };
+    let serialised = GeoJson::from(feature_collection).to_string();
+    println!("{:?}", serialised);
+    // let f = File::create("test.geojson").unwrap();
+    // let mut bw = BufWriter::new(f);
+    // bw.write_all(serialised.as_bytes()).unwrap();
 }
