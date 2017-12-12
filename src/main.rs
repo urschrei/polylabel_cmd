@@ -15,22 +15,20 @@ use geojson::conversion::TryInto;
 extern crate polylabel;
 use polylabel::polylabel;
 
-fn a(s: &str) {}
-
 fn main() {
     let command_params = App::new("polylabel")
        .version(&crate_version!()[..])
        .author("Stephan Hügel <urschrei@gmail.com>")
        .about("Find optimum label positions for polygons")
        .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 1.0'")
-       .arg(Arg::with_name("POLYGON")
+       .arg(Arg::with_name("GEOJSON")
                 .help("A GeoJSON file representing a polygon")
                 .index(1)
                 .required(true))
        .get_matches();
 
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(1.0);
-    let poly = value_t!(command_params.value_of("POLYGON"), String).unwrap();
+    let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let mut f = File::open(poly).expect("file not found");
     let mut contents = String::new();
     f.read_to_string(&mut contents)
@@ -43,8 +41,8 @@ fn main() {
                 .filter_map(|feature| match feature.geometry {
                                 Some(geometry) => {
                                     match geometry.value {
-                                        Value::Polygon(pt) => pt.try_into().ok(),
-                                        Value::Point(p) => None,
+                                        Value::Polygon(_) => geometry.value.try_into().ok(),
+                                        Value::Point(_) => None,
                                         _ => None,
                                     }
                                 }
