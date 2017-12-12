@@ -77,8 +77,5 @@ fn main() {
         foreign_members: None,
     };
     let serialised = GeoJson::from(feature_collection).to_string();
-    println!("{:?}", serialised);
-    // let f = File::create("test.geojson").unwrap();
-    // let mut bw = BufWriter::new(f);
-    // bw.write_all(serialised.as_bytes()).unwrap();
+    println!("{}", serialised);
 }
