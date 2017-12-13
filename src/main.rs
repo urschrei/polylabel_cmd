@@ -27,7 +27,7 @@ fn main() {
        .version(&crate_version!()[..])
        .author("Stephan Hügel <urschrei@gmail.com>")
        .about("Find optimum label positions for polygons")
-       .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 1.0'")
+       .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 0.001'")
        .arg(Arg::with_name("GEOJSON")
                 .help("GeoJSON with a FeatureCollection containing one or more polygons")
                 .index(1)
