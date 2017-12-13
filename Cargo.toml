@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A command-line utility for finding optimum polygon label positions"
 readme = "README.md"
+repository = "https://github.com/urschrei/polylabel_cmd"
 keywords = ["geo, polylabel, gis"]
 license = "MIT"
 
