@@ -45,7 +45,7 @@ fn main() {
     let mut results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => fc.features
             .into_par_iter()
-            // filter_map removes any None values from the final collection
+            // filter_map removes any None values
             .filter_map(|feature| match feature.geometry {
                 Some(geometry) => match geometry.value {
                     Value::Polygon(_) => {
@@ -58,13 +58,41 @@ fn main() {
                     // only Polygons are allowed
                     _ => None,
                 },
-                // only valid Features are allowed
+                // empty feature
                 _ => None,
             })
             .map(|p| Some(p))
             .collect(),
-        // only FeatureCollections are allowed
-        _ => vec![None],
+        GeoJson::Feature(feature) => {
+            match feature.geometry {
+                Some(geometry) => match geometry.value {
+                    Value::Polygon(_) => {
+                        vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert GeoJSON"), &tolerance)])]
+                    },
+                    Value::MultiPolygon(_) => {
+                        let mp: MultiPolygon<_> = geometry.value.try_into().expect("ugh");
+                        vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
+                    },
+                    // only Polygons are allowed
+                    _ => vec![None],
+                },
+                // empty feature
+                _ => vec![None]
+            }
+        },
+        GeoJson::Geometry(geometry) => {
+            match geometry.value {
+                Value::Polygon(_) => {
+                    vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert GeoJSON"), &tolerance)])]
+                },
+                Value::MultiPolygon(_) => {
+                    let mp: MultiPolygon<_> = geometry.value.try_into().expect("ugh");
+                    vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
+                },
+                // only Polygons are allowed
+                _ => vec![None],
+            }
+        }
     };
     results.retain(|vec| vec.is_some());
     if !results.is_empty() {
