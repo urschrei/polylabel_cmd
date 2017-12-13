@@ -41,23 +41,27 @@ fn main() {
     f.read_to_string(&mut contents)
         .expect("Unable to read file");
     let gj = contents.parse::<GeoJson>().unwrap();
+    // This will hold Point<_> values
     let results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => fc.features
             .into_par_iter()
+            // filter_map removes any None values from the final collection
             .filter_map(|feature| match feature.geometry {
                 Some(geometry) => match geometry.value {
                     Value::Polygon(_) => {
                         Some(polylabel(&geometry.value.try_into().unwrap(), &tolerance))
                     }
                     Value::Point(_) => None,
+                    // only Polygons are allowed
                     _ => None,
                 },
+                // only valid Features are allowed
                 _ => None,
             })
             .map(|p| Some(p))
             .collect(),
-        GeoJson::Feature(_) => vec![None],
-        GeoJson::Geometry(_) => vec![None],
+        // only FeatureCollections are allowed
+        _ => vec![None],
     };
     // now build an output geojson
     let feature_collection = FeatureCollection {
@@ -65,10 +69,10 @@ fn main() {
         features: results
             .into_par_iter()
             .map(|point| Value::from(&point.unwrap()))
-            .map(|geom| {
+            .map(|value| {
                 Feature {
                     bbox: None,
-                    geometry: Some(Geometry::new(geom)),
+                    geometry: Some(Geometry::new(value)),
                     id: None,
                     properties: Some(Map::new()),
                     foreign_members: None,
