@@ -42,7 +42,7 @@ fn main() {
         .expect("Unable to read file");
     let gj = contents.parse::<GeoJson>().unwrap();
     // This will hold Point<_> values
-    let results: Vec<Option<_>> = match gj {
+    let mut results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => fc.features
             .into_par_iter()
             // filter_map removes any None values from the final collection
@@ -66,25 +66,30 @@ fn main() {
         // only FeatureCollections are allowed
         _ => vec![None],
     };
-    // Build an output geojson
-    // results is a Vec<Option<Vec<Point<_>>>>
-    // flat_map removes the inner vec, yielding Option<Point<_>>
-    let feature_collection = FeatureCollection {
-        bbox: None,
-        features: results
-            .into_par_iter()
-            .flat_map(|points| points.unwrap())
-            .map(|point| Value::from(&point))
-            .map(|value| Feature {
-                bbox: None,
-                geometry: Some(Geometry::new(value)),
-                id: None,
-                properties: Some(Map::new()),
-                foreign_members: None,
-            })
-            .collect(),
-        foreign_members: None,
-    };
-    let serialised = GeoJson::from(feature_collection).to_string();
-    println!("{}", serialised);
+    results.retain(|vec| vec.is_some());
+    if !results.is_empty() {
+        // Build an output geojson
+        // results is a Vec<Option<Vec<Point<_>>>>
+        // flat_map removes the inner vec, yielding Option<Point<_>>
+        let feature_collection = FeatureCollection {
+            bbox: None,
+            features: results
+                .into_par_iter()
+                .flat_map(|points| points.unwrap())
+                .map(|point| Value::from(&point))
+                .map(|value| Feature {
+                    bbox: None,
+                    geometry: Some(Geometry::new(value)),
+                    id: None,
+                    properties: Some(Map::new()),
+                    foreign_members: None,
+                })
+                .collect(),
+            foreign_members: None,
+        };
+        let serialised = GeoJson::from(feature_collection).to_string();
+        println!("{}", serialised);
+    } else {
+        println!("No valid polygons were found. Please check your input.");
+    }
 }
