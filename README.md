@@ -21,5 +21,8 @@ Polylabel is fast. Polygons are processed in parallel, using [Rayon](https://git
 ## Binaries
 Will be available when I set up CI.
 
+## TODO
+Nicer error handling.
+
 ## License
 [MIT](license.txt)
