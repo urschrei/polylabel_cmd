@@ -7,7 +7,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-// use geo::{Polygon, Point};
+use geo::{MultiPolygon};
 
 extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -49,9 +49,12 @@ fn main() {
             .filter_map(|feature| match feature.geometry {
                 Some(geometry) => match geometry.value {
                     Value::Polygon(_) => {
-                        Some(polylabel(&geometry.value.try_into().unwrap(), &tolerance))
-                    }
-                    Value::Point(_) => None,
+                        Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert GeoJSON"), &tolerance)])
+                    },
+                    Value::MultiPolygon(_) => {
+                        let mp: MultiPolygon<_> = geometry.value.try_into().expect("ugh");
+                        Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())
+                    },
                     // only Polygons are allowed
                     _ => None,
                 },
@@ -63,20 +66,21 @@ fn main() {
         // only FeatureCollections are allowed
         _ => vec![None],
     };
-    // now build an output geojson
+    // Build an output geojson
+    // results is a Vec<Option<Vec<Point<_>>>>
+    // flat_map removes the inner vec, yielding Option<Point<_>>
     let feature_collection = FeatureCollection {
         bbox: None,
         features: results
             .into_par_iter()
-            .map(|point| Value::from(&point.unwrap()))
-            .map(|value| {
-                Feature {
-                    bbox: None,
-                    geometry: Some(Geometry::new(value)),
-                    id: None,
-                    properties: Some(Map::new()),
-                    foreign_members: None,
-                }
+            .flat_map(|points| points.unwrap())
+            .map(|point| Value::from(&point))
+            .map(|value| Feature {
+                bbox: None,
+                geometry: Some(Geometry::new(value)),
+                id: None,
+                properties: Some(Map::new()),
+                foreign_members: None,
             })
             .collect(),
         foreign_members: None,
