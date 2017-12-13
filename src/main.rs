@@ -34,7 +34,7 @@ fn main() {
                 .required(true))
        .get_matches();
 
-    let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(1.0);
+    let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let mut f = File::open(poly).expect("file not found");
     let mut contents = String::new();
