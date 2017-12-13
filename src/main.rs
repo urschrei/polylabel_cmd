@@ -29,7 +29,8 @@ fn main() {
        .about("Find optimum label positions for polygons")
        .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 0.001'")
        .arg(Arg::with_name("GEOJSON")
-                .help("GeoJSON with a FeatureCollection containing one or more polygons")
+                .help("GeoJSON with a FeatureCollection containing one or more (multi)polygons, \
+                 or a Feature containing a multi(polygon) or a geometry that is a (multi)polygon")
                 .index(1)
                 .required(true))
        .get_matches();
