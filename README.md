@@ -11,8 +11,9 @@ Polylabel takes one mandatory argument: a path to a valid GeoJSON file, containi
 
 Any non-(Multi)Polygon geometries are ignored.  
 
-It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `1.0`. Smaller tolerances take longer to calculate.  
-MultiPolygon input will be flattened.
+It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `1.0`. Smaller tolerances take longer to calculate.   
+
+Output is a GeoJSON `FeatureCollection` containing `Point` geometries, in the same order as the input geometries. Note that if the input contained `MultiPolygon`s, the output will be longer as these geometries are individually processed.
 
 ## Speed
 Polylabel is fast. Polygons are processed in parallel, using [Rayon](https://github.com/rayon-rs/rayon).
