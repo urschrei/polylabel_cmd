@@ -5,11 +5,11 @@ This gives you the `polylabel` command.
 ## Use
 Polylabel takes one mandatory argument: a path to a valid GeoJSON file, containing any of:
 
-- a `FeatureCollection` of valid Polygons or MultiPolygons
+- a `FeatureCollection` containing `Feature`s which are valid Polygons or MultiPolygons
 - a `Feature` containing a valid Polygon or MultiPolygon
 - a `Geometry` which is a valid Polygon or MultiPolygon.
 
-Any non-(Multi)Polygon geometries are ignored.  
+Any non-(Multi)Polygon content is ignored.  
 
 It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `1.0`. Smaller tolerances take longer to calculate.   
 
