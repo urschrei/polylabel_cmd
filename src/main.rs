@@ -19,6 +19,9 @@ use serde_json::{Map};
 extern crate polylabel;
 use polylabel::polylabel;
 
+extern crate rayon;
+use rayon::prelude::*;
+
 fn main() {
     let command_params = App::new("polylabel")
        .version(&crate_version!()[..])
@@ -41,7 +44,7 @@ fn main() {
     let results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => {
             fc.features
-                .into_iter()
+                .into_par_iter()
                 .filter_map(|feature| match feature.geometry {
                                 Some(geometry) => {
                                     match geometry.value {
@@ -66,7 +69,7 @@ fn main() {
     let feature_collection = FeatureCollection {
         bbox: None,
         features: results
-            .into_iter().map(|point| Value::from(&point.unwrap()))
+            .into_par_iter().map(|point| Value::from(&point.unwrap()))
             .map(|geom|Feature {
                 bbox: None,
                 geometry: Some(Geometry::new(geom)),
