@@ -4,17 +4,17 @@ use std::io::prelude::*;
 
 #[macro_use]
 extern crate clap;
-use clap::{Arg, App};
+use clap::{App, Arg};
 
 extern crate geo;
 // use geo::{Polygon, Point};
 
 extern crate geojson;
-use geojson::{GeoJson, Geometry, Value, Feature, FeatureCollection};
+use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
 extern crate serde_json;
-use serde_json::{Map};
+use serde_json::Map;
 
 extern crate polylabel;
 use polylabel::polylabel;
@@ -42,40 +42,38 @@ fn main() {
         .expect("Unable to read file");
     let gj = contents.parse::<GeoJson>().unwrap();
     let results: Vec<Option<_>> = match gj {
-        GeoJson::FeatureCollection(fc) => {
-            fc.features
-                .into_par_iter()
-                .filter_map(|feature| match feature.geometry {
-                                Some(geometry) => {
-                                    match geometry.value {
-                                        Value::Polygon(_) => Some(polylabel(&geometry.value.try_into().unwrap(), &tolerance)),
-                                        Value::Point(_) => None,
-                                        _ => None,
-                                    }
-                                }
-                                _ => None,
-                            })
-                .map(|p| Some(p))
-                .collect()
-        },
-        GeoJson::Feature(_) => {
-            vec![None]
-        },
-        GeoJson::Geometry(_) => {
-            vec![None]
-        }
+        GeoJson::FeatureCollection(fc) => fc.features
+            .into_par_iter()
+            .filter_map(|feature| match feature.geometry {
+                Some(geometry) => match geometry.value {
+                    Value::Polygon(_) => {
+                        Some(polylabel(&geometry.value.try_into().unwrap(), &tolerance))
+                    }
+                    Value::Point(_) => None,
+                    _ => None,
+                },
+                _ => None,
+            })
+            .map(|p| Some(p))
+            .collect(),
+        GeoJson::Feature(_) => vec![None],
+        GeoJson::Geometry(_) => vec![None],
     };
     // now build an output geojson
     let feature_collection = FeatureCollection {
         bbox: None,
         features: results
-            .into_par_iter().map(|point| Value::from(&point.unwrap()))
-            .map(|geom|Feature {
-                bbox: None,
-                geometry: Some(Geometry::new(geom)),
-                id: None,
-                properties: Some(Map::new()),
-                foreign_members: None })
+            .into_par_iter()
+            .map(|point| Value::from(&point.unwrap()))
+            .map(|geom| {
+                Feature {
+                    bbox: None,
+                    geometry: Some(Geometry::new(geom)),
+                    id: None,
+                    properties: Some(Map::new()),
+                    foreign_members: None,
+                }
+            })
             .collect(),
         foreign_members: None,
     };
