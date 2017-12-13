@@ -11,7 +11,7 @@ Polylabel takes one mandatory argument: a path to a valid GeoJSON file, containi
 
 Any non-(Multi)Polygon content is ignored.  
 
-It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `1.0`. Smaller tolerances take longer to calculate.   
+It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   
 
 Output is a GeoJSON `FeatureCollection` containing `Point` geometries, in the same order as the input geometries. Note that if the input contained `MultiPolygon`s, the output will be longer as these geometries are individually processed.
 
