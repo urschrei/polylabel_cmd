@@ -60,10 +60,12 @@ fn main() {
                 .filter_map(|feature| match feature.geometry {
                     Some(geometry) => match geometry.value {
                         Value::Polygon(_) => {
-                            Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])
+                            Some(vec![polylabel(&geometry.value.try_into().expect(
+                                "Unable to convert Polygon"), &tolerance)])
                         },
                         Value::MultiPolygon(_) => {
-                            let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
+                            let mp: MultiPolygon<_> = geometry.value.try_into().expect(
+                                "Unable to convert MultiPolygon");
                             Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())
                         },
                         // only Polygons are allowed
@@ -78,10 +80,12 @@ fn main() {
                 match feature.geometry {
                     Some(geometry) => match geometry.value {
                         Value::Polygon(_) => {
-                            vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])]
+                            vec![Some(vec![polylabel(&geometry.value.try_into().expect(
+                                "Unable to convert Polygon"), &tolerance)])]
                         },
                         Value::MultiPolygon(_) => {
-                            let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
+                            let mp: MultiPolygon<_> = geometry.value.try_into().expect(
+                                "Unable to convert MultiPolygon");
                             vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
                         },
                         // only Polygons are allowed
@@ -94,10 +98,12 @@ fn main() {
             GeoJson::Geometry(geometry) => {
                 match geometry.value {
                     Value::Polygon(_) => {
-                        vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])]
+                        vec![Some(vec![polylabel(&geometry.value.try_into().expect(
+                            "Unable to convert Polygon"), &tolerance)])]
                     },
                     Value::MultiPolygon(_) => {
-                        let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
+                        let mp: MultiPolygon<_> = geometry.value.try_into().expect(
+                            "Unable to convert MultiPolygon");
                         vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
                     },
                     // only Polygons are allowed
