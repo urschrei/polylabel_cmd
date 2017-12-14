@@ -1,6 +1,7 @@
 use std::fs::File;
 // use std::io::{Write, BufWriter};
 use std::io::prelude::*;
+use std::process;
 
 #[macro_use]
 extern crate clap;
@@ -37,11 +38,19 @@ fn main() {
 
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
-    let mut f = File::open(poly).expect("file not found");
+    let mut f = File::open(poly).unwrap_or_else(|_| {
+        println!("Couldn't find file.");
+        process::exit(1)
+    });
     let mut contents = String::new();
-    f.read_to_string(&mut contents)
-        .expect("Unable to read file");
-    let gj = contents.parse::<GeoJson>().unwrap();
+    f.read_to_string(&mut contents).unwrap_or_else(|_| {
+        println!("Couldn't read file.");
+        process::exit(1)
+    });
+    let gj = contents.parse::<GeoJson>().unwrap_or_else(|_| {
+        println!("Couldn't parse file. Is it valid GeoJSON?");
+        process::exit(1)
+    });
     // This will hold Point<_> values
     let mut results: Vec<Option<_>> = match gj {
         GeoJson::FeatureCollection(fc) => fc.features
