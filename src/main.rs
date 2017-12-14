@@ -2,6 +2,7 @@ use std::fs::File;
 // use std::io::{Write, BufWriter};
 use std::io::prelude::*;
 use std::process;
+use std::error::Error;
 
 #[macro_use]
 extern crate clap;
@@ -23,6 +24,13 @@ use polylabel::polylabel;
 extern crate rayon;
 use rayon::prelude::*;
 
+fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
+    let mut f = File::open(p)?;
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)?;
+    Ok(contents.parse::<GeoJson>()?)
+}
+
 fn main() {
     let command_params = App::new("polylabel")
        .version(&crate_version!()[..])
@@ -38,44 +46,53 @@ fn main() {
 
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
-    let mut f = File::open(poly).unwrap_or_else(|_| {
-        println!("Couldn't find file.");
-        process::exit(1)
-    });
-    let mut contents = String::new();
-    f.read_to_string(&mut contents).unwrap_or_else(|_| {
-        println!("Couldn't read file.");
-        process::exit(1)
-    });
-    let gj = contents.parse::<GeoJson>().unwrap_or_else(|_| {
-        println!("Couldn't parse file. Is it valid GeoJSON?");
-        process::exit(1)
-    });
-    // This will hold Point<_> values
-    let mut results: Vec<Option<_>> = match gj {
-        GeoJson::FeatureCollection(fc) => fc.features
-            .into_par_iter()
-            // filter_map removes any None values
-            .filter_map(|feature| match feature.geometry {
-                Some(geometry) => match geometry.value {
-                    Value::Polygon(_) => {
-                        Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])
+    let res = open_and_parse(&poly);
+    if res.is_err() {
+        println!("An error occurred: {:?}", res.err().unwrap());
+        process::exit(1);
+    } else {
+        let gj = res.unwrap();
+        // This will hold Point<_> values
+        let mut results: Vec<Option<_>> = match gj {
+            GeoJson::FeatureCollection(fc) => fc.features
+                .into_par_iter()
+                // filter_map removes any None values
+                .filter_map(|feature| match feature.geometry {
+                    Some(geometry) => match geometry.value {
+                        Value::Polygon(_) => {
+                            Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])
+                        },
+                        Value::MultiPolygon(_) => {
+                            let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
+                            Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())
+                        },
+                        // only Polygons are allowed
+                        _ => None,
                     },
-                    Value::MultiPolygon(_) => {
-                        let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
-                        Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())
-                    },
-                    // only Polygons are allowed
+                    // empty feature
                     _ => None,
-                },
-                // empty feature
-                _ => None,
-            })
-            .map(|p| Some(p))
-            .collect(),
-        GeoJson::Feature(feature) => {
-            match feature.geometry {
-                Some(geometry) => match geometry.value {
+                })
+                .map(|p| Some(p))
+                .collect(),
+            GeoJson::Feature(feature) => {
+                match feature.geometry {
+                    Some(geometry) => match geometry.value {
+                        Value::Polygon(_) => {
+                            vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])]
+                        },
+                        Value::MultiPolygon(_) => {
+                            let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
+                            vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
+                        },
+                        // only Polygons are allowed
+                        _ => vec![None],
+                    },
+                    // empty feature
+                    _ => vec![None]
+                }
+            },
+            GeoJson::Geometry(geometry) => {
+                match geometry.value {
                     Value::Polygon(_) => {
                         vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])]
                     },
@@ -85,49 +102,34 @@ fn main() {
                     },
                     // only Polygons are allowed
                     _ => vec![None],
-                },
-                // empty feature
-                _ => vec![None]
+                }
             }
-        },
-        GeoJson::Geometry(geometry) => {
-            match geometry.value {
-                Value::Polygon(_) => {
-                    vec![Some(vec![polylabel(&geometry.value.try_into().expect("Unable to convert Polygon"), &tolerance)])]
-                },
-                Value::MultiPolygon(_) => {
-                    let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
-                    vec![Some(mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect())]
-                },
-                // only Polygons are allowed
-                _ => vec![None],
-            }
-        }
-    };
-    results.retain(|vec| vec.is_some());
-    if !results.is_empty() {
-        // Build an output geojson
-        // results is a Vec<Option<Vec<Point<_>>>>
-        // flat_map removes the inner vec, yielding Option<Point<_>>
-        let feature_collection = FeatureCollection {
-            bbox: None,
-            features: results
-                .into_par_iter()
-                .flat_map(|points| points.unwrap())
-                .map(|point| Value::from(&point))
-                .map(|value| Feature {
-                    bbox: None,
-                    geometry: Some(Geometry::new(value)),
-                    id: None,
-                    properties: Some(Map::new()),
-                    foreign_members: None,
-                })
-                .collect(),
-            foreign_members: None,
         };
-        let serialised = GeoJson::from(feature_collection).to_string();
-        println!("{}", serialised);
-    } else {
-        println!("No valid polygons were found. Please check your input.");
+        results.retain(|vec| vec.is_some());
+        if !results.is_empty() {
+            // Build an output geojson
+            // results is a Vec<Option<Vec<Point<_>>>>
+            // flat_map removes the inner vec, yielding Option<Point<_>>
+            let feature_collection = FeatureCollection {
+                bbox: None,
+                features: results
+                    .into_par_iter()
+                    .flat_map(|points| points.unwrap())
+                    .map(|point| Value::from(&point))
+                    .map(|value| Feature {
+                        bbox: None,
+                        geometry: Some(Geometry::new(value)),
+                        id: None,
+                        properties: Some(Map::new()),
+                        foreign_members: None,
+                    })
+                    .collect(),
+                foreign_members: None,
+            };
+            let serialised = GeoJson::from(feature_collection).to_string();
+            println!("{}", serialised);
+        } else {
+            println!("No valid polygons were found. Please check your input.");
+        }
     }
 }
