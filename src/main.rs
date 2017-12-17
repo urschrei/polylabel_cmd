@@ -36,14 +36,15 @@ fn build_feature(
     geom: &Point<f32>,
     id: Option<Sdv>,
     properties: Option<Map<String, Sdv>>,
-    fm: Option<Map<String, Sdv>>) -> Feature {
+    fm: Option<Map<String, Sdv>>,
+) -> Feature {
     Feature {
         // point doesn't have a bbox
         bbox: None,
         geometry: Some(Geometry::new(Value::from(geom))),
         id: id,
         properties: properties,
-        foreign_members: fm
+        foreign_members: fm,
     }
 }
 
@@ -70,25 +71,42 @@ fn main() {
         let gj = res.unwrap();
         let results: Option<_> = match gj {
             GeoJson::FeatureCollection(fc) => {
-                    let processed: Vec<_> = fc.features
+                let processed: Vec<_> = fc.features
                     .into_par_iter()
                     .filter_map(|feature| {
                         match feature.geometry {
                             Some(geometry) => match geometry.value {
                                 Value::Polygon(_) => {
-                                    let res = polylabel(&geometry.value.try_into().unwrap(), &tolerance);
-                                    Some(vec![build_feature(&res, feature.id, feature.properties, feature.foreign_members)])
-                                },
+                                    let res =
+                                        polylabel(&geometry.value.try_into().unwrap(), &tolerance);
+                                    Some(vec![
+                                        build_feature(
+                                            &res,
+                                            feature.id,
+                                            feature.properties,
+                                            feature.foreign_members,
+                                        ),
+                                    ])
+                                }
                                 // This will discard the MultiPolygon properties
                                 // How to iterate over the Polygons in a GeoJson MultiPolygon?
                                 Value::MultiPolygon(_) => {
                                     // TODO: MultiPolygon should map to MultiPoint
-                                    let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
-                                    let results: Vec<Point<_>> = mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect();
-                                    Some(results.into_par_iter().map(|point| {
-                                        build_feature(&point, None, None, None)
-                                    }).collect::<Vec<Feature>>())
-                                },
+                                    let mp: MultiPolygon<_> = geometry
+                                        .value
+                                        .try_into()
+                                        .expect("Unable to convert MultiPolygon");
+                                    let results: Vec<Point<_>> = mp.0
+                                        .iter()
+                                        .map(|poly| polylabel(poly, &tolerance))
+                                        .collect();
+                                    Some(
+                                        results
+                                            .into_par_iter()
+                                            .map(|point| build_feature(&point, None, None, None))
+                                            .collect::<Vec<Feature>>(),
+                                    )
+                                }
                                 // only Polygons are allowed
                                 _ => None,
                             },
@@ -98,12 +116,12 @@ fn main() {
                     })
                     .flat_map(|f| f)
                     .collect();
-                    Some(FeatureCollection {
-                        bbox: fc.bbox,
-                        features: processed,
-                        foreign_members: fc.foreign_members
-                    })
-                }
+                Some(FeatureCollection {
+                    bbox: fc.bbox,
+                    features: processed,
+                    foreign_members: fc.foreign_members,
+                })
+            }
             // A single feature
             GeoJson::Feature(feature) => {
                 match feature.geometry {
@@ -114,30 +132,37 @@ fn main() {
                             Some(FeatureCollection {
                                 bbox: None,
                                 features: vec![build_feature(&res, None, None, None)],
-                                foreign_members: None
+                                foreign_members: None,
                             })
-                        },
+                        }
                         // This will discard the MultiPolygon properties
                         // How to iterate over the Polygons in a GeoJson MultiPolygon?
                         Value::MultiPolygon(_) => {
                             // TODO: MultiPolygon should map to MultiPoint
-                            let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
-                            let results: Vec<Point<_>> = mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect();
+                            let mp: MultiPolygon<_> = geometry
+                                .value
+                                .try_into()
+                                .expect("Unable to convert MultiPolygon");
+                            let results: Vec<Point<_>> = mp.0
+                                .iter()
+                                .map(|poly| polylabel(poly, &tolerance))
+                                .collect();
                             Some(FeatureCollection {
                                 bbox: feature.bbox,
-                                features: results.into_par_iter().map(|point| {
-                                    build_feature(&point, None, None, None)
-                                }).collect::<Vec<Feature>>(),
-                                foreign_members: feature.foreign_members
+                                features: results
+                                    .into_par_iter()
+                                    .map(|point| build_feature(&point, None, None, None))
+                                    .collect::<Vec<Feature>>(),
+                                foreign_members: feature.foreign_members,
                             })
-                        },
+                        }
                         // only Polygons are allowed
                         _ => None,
                     },
                     // empty feature
-                    _ => None
+                    _ => None,
                 }
-            },
+            }
             GeoJson::Geometry(geometry) => {
                 match geometry.value {
                     Value::Polygon(_) => {
@@ -145,21 +170,28 @@ fn main() {
                         Some(FeatureCollection {
                             bbox: None,
                             features: vec![build_feature(&res, None, None, None)],
-                            foreign_members: None
+                            foreign_members: None,
                         })
-                    },
+                    }
                     Value::MultiPolygon(_) => {
                         // TODO: MultiPolygon should map to MultiPoint
-                        let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
-                        let results: Vec<Point<_>> = mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect();
+                        let mp: MultiPolygon<_> = geometry
+                            .value
+                            .try_into()
+                            .expect("Unable to convert MultiPolygon");
+                        let results: Vec<Point<_>> = mp.0
+                            .iter()
+                            .map(|poly| polylabel(poly, &tolerance))
+                            .collect();
                         Some(FeatureCollection {
                             bbox: None,
-                            features: results.into_par_iter().map(|point| {
-                                build_feature(&point, None, None, None)
-                            }).collect::<Vec<Feature>>(),
-                            foreign_members: None
+                            features: results
+                                .into_par_iter()
+                                .map(|point| build_feature(&point, None, None, None))
+                                .collect::<Vec<Feature>>(),
+                            foreign_members: None,
                         })
-                    },
+                    }
                     // only Polygons are allowed
                     _ => None,
                 }
