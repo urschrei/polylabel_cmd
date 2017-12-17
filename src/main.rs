@@ -9,7 +9,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-use geo::{MultiPoint, MultiPolygon, Point};
+use geo::{MultiPoint, MultiPolygon};
 
 extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -91,24 +91,22 @@ fn main() {
                                         ),
                                     ])
                                 }
-                                // This will discard the MultiPolygon properties
                                 // How to iterate over the Polygons in a GeoJson MultiPolygon?
                                 Value::MultiPolygon(_) => {
-                                    // TODO: MultiPolygon should map to MultiPoint
+                                    // MultiPolygons map to MultiPoints
                                     let mp: MultiPolygon<_> = geometry
                                         .value
                                         .try_into()
                                         .expect("Unable to convert MultiPolygon");
-                                    let results: Vec<Point<_>> = mp.0
-                                        .par_iter()
-                                        .map(|poly| polylabel(poly, &tolerance))
-                                        .collect();
-                                    Some(
-                                        results
-                                            .into_par_iter()
-                                            .map(|point| build_feature(&point, None, None, None))
-                                            .collect::<Vec<Feature>>(),
-                                    )
+                                    let results = MultiPoint(
+                                        mp.0
+                                            .par_iter()
+                                            .map(|poly| polylabel(poly, &tolerance))
+                                            .collect(),
+                                    );
+                                    Some(vec![
+                                        build_feature(&results, None, feature.properties, None),
+                                    ])
                                 }
                                 // only Polygons are allowed
                                 _ => None,
@@ -119,6 +117,7 @@ fn main() {
                     })
                     .flat_map(|f| f)
                     .collect();
+                // FINALLY, build a FeatureCollection out of this insanity
                 Some(FeatureCollection {
                     bbox: fc.bbox,
                     features: processed,
@@ -141,22 +140,21 @@ fn main() {
                         // This will discard the MultiPolygon properties
                         // How to iterate over the Polygons in a GeoJson MultiPolygon?
                         Value::MultiPolygon(_) => {
-                            // TODO: MultiPolygon should map to MultiPoint
+                            // MultiPolygons map to MultiPoints
                             let mp: MultiPolygon<_> = geometry
                                 .value
                                 .try_into()
                                 .expect("Unable to convert MultiPolygon");
-                            let results: Vec<Point<_>> = mp.0
-                                .iter()
-                                .map(|poly| polylabel(poly, &tolerance))
-                                .collect();
+                            let results = MultiPoint(
+                                mp.0
+                                    .par_iter()
+                                    .map(|poly| polylabel(poly, &tolerance))
+                                    .collect(),
+                            );
                             Some(FeatureCollection {
-                                bbox: feature.bbox,
-                                features: results
-                                    .into_par_iter()
-                                    .map(|point| build_feature(&point, None, None, None))
-                                    .collect::<Vec<Feature>>(),
-                                foreign_members: feature.foreign_members,
+                                bbox: None,
+                                features: vec![build_feature(&results, None, feature.properties, None)],
+                                foreign_members:None
                             })
                         }
                         // only Polygons are allowed
@@ -177,23 +175,21 @@ fn main() {
                         })
                     }
                     Value::MultiPolygon(_) => {
-                        // TODO: MultiPolygon should map to MultiPoint
+                        // MultiPolygons map to MultiPoints
                         let mp: MultiPolygon<_> = geometry
                             .value
                             .try_into()
                             .expect("Unable to convert MultiPolygon");
-                        let results: Vec<Point<_>> = mp.0
-                            .iter()
-                            .map(|poly| polylabel(poly, &tolerance))
-                            .collect();
-                        // let mpoint = MultiPoint(results);
+                        let results = MultiPoint(
+                            mp.0
+                                .par_iter()
+                                .map(|poly| polylabel(poly, &tolerance))
+                                .collect(),
+                        );
                         Some(FeatureCollection {
                             bbox: None,
-                            features: results
-                                .into_par_iter()
-                                .map(|point| build_feature(&point, None, None, None))
-                                .collect::<Vec<Feature>>(),
-                            foreign_members: None,
+                            features: vec![build_feature(&results, None, None, None)],
+                            foreign_members:None
                         })
                     }
                     // only Polygons are allowed

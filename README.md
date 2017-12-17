@@ -3,17 +3,24 @@
 This gives you the `polylabel` command.
 
 ## Use
-Polylabel takes one mandatory argument: a path to a valid GeoJSON file, containing any of:
+Polylabel takes one mandatory argument: a path to a valid GeoJSON file, containing any 1 of:
 
-- a `FeatureCollection` containing `Feature`s which are valid Polygons or MultiPolygons
-- a `Feature` containing a valid Polygon or MultiPolygon
-- a `Geometry` which is a valid Polygon or MultiPolygon.
+- a `FeatureCollection` containing `Feature`s which are valid `Polygon`s or `MultiPolygon`s
+- a `Feature` containing a valid `Polygon` or `MultiPolygon`
+- a `Geometry` which is a valid `Polygon` or `MultiPolygon`.
 
 Any non-(Multi)Polygon content is ignored.  
 
 It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   
 
-Output is a GeoJSON `FeatureCollection` containing `Point` geometries, in the same order as the input geometries. Properties are mapped from input polygons to output points where possible. Note that if the input contains `MultiPolygon`s, the output will be longer as these geometries are individually processed, and the resulting features will have no associated properties.
+Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
+- `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
+- `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
+
+Output features retain the order of input features / geometries, and properties are mapped from input features to output features where they exist.
+
+## Validity
+Input geometries are *not* validated. Results from invalid input geometries may be incorrect.
 
 ## Speed
 Polylabel is fast. Polygons are processed in parallel, using [Rayon](https://github.com/rayon-rs/rayon).
