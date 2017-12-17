@@ -9,7 +9,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-use geo::{MultiPolygon, MultiPoint, Point};
+use geo::{MultiPoint, MultiPolygon, Point};
 
 extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -32,12 +32,16 @@ fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
 }
 
 /// build a Point feature
-fn build_feature(
-    geom: &Point<f32>,
+fn build_feature<'a, G>(
+    geom: &'a G,
     id: Option<Sdv>,
     properties: Option<Map<String, Sdv>>,
     fm: Option<Map<String, Sdv>>,
-) -> Feature {
+) -> Feature
+where
+    Value: From<&'a G>,
+    G: 'a,
+{
     Feature {
         bbox: None,
         geometry: Some(Geometry::new(Value::from(geom))),
