@@ -9,7 +9,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-use geo::{MultiPolygon, Point};
+use geo::{MultiPolygon, MultiPoint, Point};
 
 extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -39,7 +39,6 @@ fn build_feature(
     fm: Option<Map<String, Sdv>>,
 ) -> Feature {
     Feature {
-        // point doesn't have a bbox
         bbox: None,
         geometry: Some(Geometry::new(Value::from(geom))),
         id: id,
@@ -97,7 +96,7 @@ fn main() {
                                         .try_into()
                                         .expect("Unable to convert MultiPolygon");
                                     let results: Vec<Point<_>> = mp.0
-                                        .iter()
+                                        .par_iter()
                                         .map(|poly| polylabel(poly, &tolerance))
                                         .collect();
                                     Some(
@@ -183,6 +182,7 @@ fn main() {
                             .iter()
                             .map(|poly| polylabel(poly, &tolerance))
                             .collect();
+                        // let mpoint = MultiPoint(results);
                         Some(FeatureCollection {
                             bbox: None,
                             features: results
