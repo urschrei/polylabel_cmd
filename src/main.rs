@@ -16,6 +16,7 @@ use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
 extern crate serde_json;
+use serde_json::{Map, Value as Sdv};
 
 extern crate polylabel;
 use polylabel::polylabel;
@@ -28,6 +29,22 @@ fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
     Ok(contents.parse::<GeoJson>()?)
+}
+
+/// build a Point feature
+fn build_feature(
+    geom: &Point<f32>,
+    id: Option<Sdv>,
+    properties: Option<Map<String, Sdv>>,
+    fm: Option<Map<String, Sdv>>) -> Feature {
+    Feature {
+        // point doesn't have a bbox
+        bbox: None,
+        geometry: Some(Geometry::new(Value::from(geom))),
+        id: id,
+        properties: properties,
+        foreign_members: fm
+    }
 }
 
 fn main() {
@@ -60,14 +77,7 @@ fn main() {
                             Some(geometry) => match geometry.value {
                                 Value::Polygon(_) => {
                                     let res = polylabel(&geometry.value.try_into().unwrap(), &tolerance);
-                                    Some(vec![Feature {
-                                        // point doesn't have a bbox
-                                        bbox: None,
-                                        geometry: Some(Geometry::new(Value::from(&res))),
-                                        id: feature.id,
-                                        properties: feature.properties,
-                                        foreign_members: feature.foreign_members
-                                    }])
+                                    Some(vec![build_feature(&res, feature.id, feature.properties, feature.foreign_members)])
                                 },
                                 // This will discard the MultiPolygon properties
                                 // How to iterate over the Polygons in a GeoJson MultiPolygon?
@@ -76,13 +86,7 @@ fn main() {
                                     let mp: MultiPolygon<_> = geometry.value.try_into().expect("Unable to convert MultiPolygon");
                                     let results: Vec<Point<_>> = mp.0.iter().map(|poly| polylabel(poly, &tolerance)).collect();
                                     Some(results.into_par_iter().map(|point| {
-                                        Feature {
-                                            bbox: None,
-                                            geometry: Some(Geometry::new(Value::from(&point))),
-                                            id: None,
-                                            properties: None,
-                                            foreign_members: None
-                                        }
+                                        build_feature(&point, None, None, None)
                                     }).collect::<Vec<Feature>>())
                                 },
                                 // only Polygons are allowed
@@ -109,14 +113,7 @@ fn main() {
                             let res = polylabel(&geometry.value.try_into().unwrap(), &tolerance);
                             Some(FeatureCollection {
                                 bbox: None,
-                                features: vec![Feature {
-                                    // point doesn't have a bbox
-                                    bbox: None,
-                                    geometry: Some(Geometry::new(Value::from(&res))),
-                                    id: feature.id,
-                                    properties: feature.properties,
-                                    foreign_members: feature.foreign_members
-                                }],
+                                features: vec![build_feature(&res, None, None, None)],
                                 foreign_members: None
                             })
                         },
@@ -129,13 +126,8 @@ fn main() {
                             Some(FeatureCollection {
                                 bbox: feature.bbox,
                                 features: results.into_par_iter().map(|point| {
-                                    Feature {
-                                        bbox: None,
-                                        geometry: Some(Geometry::new(Value::from(&point))),
-                                        id: None,
-                                        properties: None,
-                                        foreign_members: None
-                                }}).collect::<Vec<Feature>>(),
+                                    build_feature(&point, None, None, None)
+                                }).collect::<Vec<Feature>>(),
                                 foreign_members: feature.foreign_members
                             })
                         },
@@ -152,13 +144,7 @@ fn main() {
                         let res = polylabel(&geometry.value.try_into().unwrap(), &tolerance);
                         Some(FeatureCollection {
                             bbox: None,
-                            features: vec![Feature {
-                                bbox: None,
-                                geometry: Some(Geometry::new(Value::from(&res))),
-                                id: None,
-                                properties: None,
-                                foreign_members: None
-                            }],
+                            features: vec![build_feature(&res, None, None, None)],
                             foreign_members: None
                         })
                     },
@@ -169,13 +155,8 @@ fn main() {
                         Some(FeatureCollection {
                             bbox: None,
                             features: results.into_par_iter().map(|point| {
-                                Feature {
-                                    bbox: None,
-                                    geometry: Some(Geometry::new(Value::from(&point))),
-                                    id: None,
-                                    properties: None,
-                                    foreign_members: None
-                            }}).collect::<Vec<Feature>>(),
+                                build_feature(&point, None, None, None)
+                            }).collect::<Vec<Feature>>(),
                             foreign_members: None
                         })
                     },
