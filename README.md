@@ -7,8 +7,8 @@ Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 
 - a `FeatureCollection` containing `Feature`s which are valid `Polygon`s, `MultiPolygon`s, or `GeometryCollection`s containing same.
 - a `Feature` containing a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
-- a `Geometry` which is a valid `Polygon` or `MultiPolygon`.
-    - `GeometryCollection` input is not currently supported.
+- a `Geometry` which is a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
+- Nested GeometryCollections are **not** supported.
 
 Any non-(`Multi`)`Polygon` content is ignored.  
 
@@ -17,9 +17,9 @@ It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-t
 Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
 - `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
-- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s, whose geometries are `Point`s or `MultiPoint`s.
+- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose geometries are `Point`s or `MultiPoint`s.
 
-Output features retain the order of input features / geometries, and properties are mapped from input features to output features where they exist.
+Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
 
 ## Validity
 Input geometries are *not* validated. Results from invalid input geometries may be incorrect.

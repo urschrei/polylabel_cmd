@@ -85,7 +85,6 @@ fn label_a_geometry(feat: Feature, tolerance: &f32) -> Option<Vec<Feature>> {
                         feat.foreign_members),
                 ])
             }
-            // A GeometryCollection's properties can't be mapped onto its child object
             Value::GeometryCollection(gc) => {
                 let collected = gc.into_par_iter().map(|geom_| {
                         match geom_.value {
@@ -196,6 +195,43 @@ fn main() {
                         Some(FeatureCollection {
                             bbox: None,
                             features: vec![build_feature(&results, None, None, None)],
+                            foreign_members: None,
+                        })
+                    }
+                    Value::GeometryCollection(gc) => {
+                        let collected = gc.into_par_iter().map(|geom_| {
+                                match geom_.value {
+                                    Value::Polygon(_) => {
+                                        Some(Gg::from(polylabel(&geom_.value.try_into().unwrap(), &tolerance)))
+                                    }
+                                    Value::MultiPolygon(_) => {
+                                        // MultiPolygons map to MultiPoints
+                                        let mp: MultiPolygon<_> = geom_
+                                            .value
+                                            .try_into()
+                                            .expect("Unable to convert MultiPolygon");
+                                        Some(Gg::from(MultiPoint(
+                                            mp.0
+                                                .par_iter()
+                                                .map(|poly| polylabel(poly, &tolerance))
+                                                .collect(),
+                                        )))
+                                    }
+                                    // only Polygons are allowed
+                                    _ => None,
+                                }
+                            }
+                        )
+                        .filter_map(|f| f)
+                        .collect::<Vec<_>>();
+                        Some(FeatureCollection {
+                            bbox: None,
+                            features: vec![build_feature(
+                                &GeometryCollection(collected),
+                                None,
+                                None,
+                                None
+                                )],
                             foreign_members: None,
                         })
                     }

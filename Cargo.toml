@@ -1,6 +1,6 @@
 [package]
 name = "polylabel_cmd"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A command-line utility for finding optimum polygon label positions"
 readme = "README.md"
@@ -12,6 +12,7 @@ exclude = ["geojson/*"]
 [dependencies]
 geo = "0.6.2"
 geojson = "0.9.1"
+# geojson = { git = "https://github.com/georust/rust-geojson" }
 polylabel = "1.0.44"
 clap = "2.29.0"
 serde_json = "1.0.8"
