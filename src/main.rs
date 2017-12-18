@@ -135,7 +135,7 @@ fn main() {
                     features: processed,
                     foreign_members: collection.foreign_members,
                 })
-            }
+            },
             GeoJson::Feature(feature) => Some(FeatureCollection {
                 bbox: None,
                 features: vec![label_for_feature(feature, &tolerance).unwrap()],
