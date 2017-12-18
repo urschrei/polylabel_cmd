@@ -5,12 +5,20 @@ This gives you the `polylabel` command.
 ## Use
 Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 
-- a `FeatureCollection` containing `Feature`s which are valid `Polygon`s, `MultiPolygon`s, or `GeometryCollection`s containing same.
-- a `Feature` containing a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
-- a `Geometry` which is a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
-- Nested `GeometryCollections` are **not** supported.
-
-Any non-(`Multi`)`Polygon` content is ignored.  
+- a `FeatureCollection` containing `Feature`s which are valid:
+    - `Polygon`s or
+    - `MultiPolygon`s or
+    - `GeometryCollection`s containing either or both of the above.
+- a `Feature` containing a valid:
+    - `Polygon` or
+    - `MultiPolygon` or
+    - `GeometryCollection` containing either or both of the above.
+- a `Geometry` which is a valid
+    - `Polygon` or
+    - `MultiPolygon` or
+    - `GeometryCollection` containing either or both of the above.
+- Nested `GeometryCollections` are **not** supported
+- Non-(`Multi`)`Polygon` geometries are **stripped** from any output.  
 
 It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   
 
