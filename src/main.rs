@@ -31,13 +31,10 @@ fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
     Ok(contents.parse::<GeoJson>()?)
 }
 
-/// build a Point feature
-fn build_feature<'a, G>(
-    geom: &'a G,
-    id: Option<Sdv>,
-    properties: Option<Map<String, Sdv>>,
-    fm: Option<Map<String, Sdv>>,
-) -> Feature
+type ValMap = Option<Map<String, Sdv>>;
+
+/// build a Feature from an input Geo type
+fn build_feature<'a, G>(geom: &'a G, id: Option<Sdv>, prp: ValMap, fm: ValMap) -> Feature
 where
     Value: From<&'a G>,
     G: 'a,
@@ -46,7 +43,7 @@ where
         bbox: None,
         geometry: Some(Geometry::new(Value::from(geom))),
         id: id,
-        properties: properties,
+        properties: prp,
         foreign_members: fm,
     }
 }
@@ -56,10 +53,11 @@ fn main() {
        .version(&crate_version!()[..])
        .author("Stephan Hügel <urschrei@gmail.com>")
        .about("Find optimum label positions for polygons")
-       .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding the label position. Defaults to 0.001'")
+       .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding \
+        the label position. Defaults to 0.001'")
        .arg(Arg::with_name("GEOJSON")
-                .help("GeoJSON with a FeatureCollection containing one or more (multi)polygons, \
-                 or a Feature containing a multi(polygon) or a geometry that is a (multi)polygon")
+                .help("GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
+                 or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon")
                 .index(1)
                 .required(true))
        .get_matches();
@@ -153,8 +151,10 @@ fn main() {
                             );
                             Some(FeatureCollection {
                                 bbox: None,
-                                features: vec![build_feature(&results, None, feature.properties, None)],
-                                foreign_members:None
+                                features: vec![
+                                    build_feature(&results, None, feature.properties, None),
+                                ],
+                                foreign_members: None,
                             })
                         }
                         // only Polygons are allowed
@@ -189,7 +189,7 @@ fn main() {
                         Some(FeatureCollection {
                             bbox: None,
                             features: vec![build_feature(&results, None, None, None)],
-                            foreign_members:None
+                            foreign_members: None,
                         })
                     }
                     // only Polygons are allowed
