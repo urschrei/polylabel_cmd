@@ -8,7 +8,7 @@ Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 - a `FeatureCollection` containing `Feature`s which are valid `Polygon`s, `MultiPolygon`s, or `GeometryCollection`s containing same.
 - a `Feature` containing a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
 - a `Geometry` which is a valid `Polygon`, `MultiPolygon`, or `GeometryCollection`
-- Nested GeometryCollections are **not** supported.
+- Nested `GeometryCollections` are **not** supported.
 
 Any non-(`Multi`)`Polygon` content is ignored.  
 
