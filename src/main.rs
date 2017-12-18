@@ -71,8 +71,8 @@ fn main() {
     } else {
         let gj = res.unwrap();
         let results: Option<_> = match gj {
-            GeoJson::FeatureCollection(fc) => {
-                let processed: Vec<_> = fc.features
+            GeoJson::FeatureCollection(collection) => {
+                let processed: Vec<_> = collection.features
                     .into_par_iter()
                     .filter_map(|feature| {
                         match feature.geometry {
@@ -117,12 +117,11 @@ fn main() {
                     .collect();
                 // FINALLY, build a FeatureCollection out of this insanity
                 Some(FeatureCollection {
-                    bbox: fc.bbox,
+                    bbox: collection.bbox,
                     features: processed,
-                    foreign_members: fc.foreign_members,
+                    foreign_members: collection.foreign_members,
                 })
-            }
-            // A single feature
+            },
             GeoJson::Feature(feature) => {
                 match feature.geometry {
                     Some(geometry) => match geometry.value {
@@ -135,7 +134,6 @@ fn main() {
                                 foreign_members: None,
                             })
                         }
-                        // This will discard the MultiPolygon properties
                         // How to iterate over the Polygons in a GeoJson MultiPolygon?
                         Value::MultiPolygon(_) => {
                             // MultiPolygons map to MultiPoints
@@ -163,7 +161,7 @@ fn main() {
                     // empty feature
                     _ => None,
                 }
-            }
+            },
             GeoJson::Geometry(geometry) => {
                 match geometry.value {
                     Value::Polygon(_) => {
