@@ -128,6 +128,7 @@ fn main() {
                 let processed: Vec<_> = collection
                     .features
                     .into_par_iter()
+                    // TODO: check that None values are removed here
                     .filter_map(|feature| label_for_feature(feature, &tolerance))
                     .collect();
                 Some(FeatureCollection {
@@ -136,11 +137,13 @@ fn main() {
                     foreign_members: collection.foreign_members,
                 })
             },
+            // TODO what happens with e.g. Point input
             GeoJson::Feature(feature) => Some(FeatureCollection {
                 bbox: None,
                 features: vec![label_for_feature(feature, &tolerance).unwrap()],
                 foreign_members: None,
             }),
+            // TODO what happens with e.g. Point input
             GeoJson::Geometry(geometry) => {
                 let f = Feature {
                     bbox: None,
