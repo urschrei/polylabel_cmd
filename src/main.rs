@@ -9,7 +9,7 @@ extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-use geo::{MultiPoint, MultiPolygon};
+use geo::{GeometryCollection, Geometry as Gg, MultiPoint, MultiPolygon};
 
 extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -87,11 +87,10 @@ fn label_a_geometry(feat: Feature, tolerance: &f32) -> Option<Vec<Feature>> {
             }
             // A GeometryCollection's properties can't be mapped onto its child object
             Value::GeometryCollection(gc) => {
-                Some(gc.into_par_iter().map(|geom_| {
+                let collected = gc.into_par_iter().map(|geom_| {
                         match geom_.value {
                             Value::Polygon(_) => {
-                                let res = polylabel(&geom_.value.try_into().unwrap(), tolerance);
-                                    Some(vec![build_feature(&res, None, None, None)])
+                                Some(Gg::from(polylabel(&geom_.value.try_into().unwrap(), tolerance)))
                             }
                             Value::MultiPolygon(_) => {
                                 // MultiPolygons map to MultiPoints
@@ -99,13 +98,12 @@ fn label_a_geometry(feat: Feature, tolerance: &f32) -> Option<Vec<Feature>> {
                                     .value
                                     .try_into()
                                     .expect("Unable to convert MultiPolygon");
-                                let results = MultiPoint(
+                                Some(Gg::from(MultiPoint(
                                     mp.0
                                         .par_iter()
                                         .map(|poly| polylabel(poly, tolerance))
                                         .collect(),
-                                );
-                                    Some(vec![build_feature(&results, None, None, None)])
+                                )))
                             }
                             // only Polygons are allowed
                             _ => None,
@@ -113,8 +111,12 @@ fn label_a_geometry(feat: Feature, tolerance: &f32) -> Option<Vec<Feature>> {
                     }
                 )
                 .filter_map(|f| f)
-                .flat_map(|f| f)
-                .collect::<Vec<_>>())
+                .collect::<Vec<_>>();
+                Some(vec![build_feature(
+                    &GeometryCollection(collected),
+                    feat.id,
+                    feat.properties,
+                    feat.foreign_members)])
             },
             // only Polygons are allowed
             _ => None,
