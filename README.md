@@ -5,11 +5,9 @@ This gives you the `polylabel` command.
 ## Use
 Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 
-- a `FeatureCollection` containing `Feature`s which are valid `Polygon`s or `MultiPolygon`s
+- a `FeatureCollection` containing `Feature`s which are valid `Polygon`s, `MultiPolygon`s, or `GeometryCollection`s containing same.
 - a `Feature` containing a valid `Polygon` or `MultiPolygon`
 - a `Geometry` which is a valid `Polygon` or `MultiPolygon`.
-
-`GeometryCollections` are **not** currently supported.
 
 Any non-(Multi)Polygon content is ignored.  
 
@@ -19,7 +17,7 @@ Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its c
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
 - `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
 
-Output features retain the order of input features / geometries, and properties are mapped from input features to output features where they exist.
+Output features retain the order of input features / geometries, and properties are mapped from input features to output features where they exist, **with the exception of the `GeometryCollection` type**: its properties are discarded, because there's no way of mapping them onto its child geometries.
 
 ## Validity
 Input geometries are *not* validated. Results from invalid input geometries may be incorrect.
