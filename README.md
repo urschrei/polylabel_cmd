@@ -9,6 +9,8 @@ Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 - a `Feature` containing a valid `Polygon` or `MultiPolygon`
 - a `Geometry` which is a valid `Polygon` or `MultiPolygon`.
 
+`GeometryCollections` are **not** currently supported.
+
 Any non-(Multi)Polygon content is ignored.  
 
 It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   
