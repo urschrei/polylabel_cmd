@@ -119,14 +119,18 @@ fn main() {
                 let processed: Vec<_> = collection
                     .features
                     .into_par_iter()
-                    // TODO: check that None values are removed here
+                    // filter_map will remove any None features
                     .filter_map(|feature| label_for_feature(feature, &tolerance))
                     .collect();
-                Some(FeatureCollection {
-                    bbox: collection.bbox,
-                    features: processed,
-                    foreign_members: collection.foreign_members,
-                })
+                if processed.is_empty() {
+                    None
+                } else {
+                    Some(FeatureCollection {
+                        bbox: collection.bbox,
+                        features: processed,
+                        foreign_members: collection.foreign_members,
+                    })
+                }
             }
             GeoJson::Feature(feature) => match label_for_feature(feature, &tolerance) {
                 Some(labelled_feature) => Some(FeatureCollection {
@@ -159,7 +163,7 @@ fn main() {
             let serialised = GeoJson::from(f).to_string();
             println!("{}", serialised);
         } else {
-            println!("No valid polygons were found. Please check your input.");
+            println!("No valid geometries were found. Please check your input.");
         }
     }
 }
