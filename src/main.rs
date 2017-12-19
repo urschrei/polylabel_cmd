@@ -15,7 +15,7 @@ use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
 extern crate serde_json;
-use serde_json::Map;
+use serde_json::{Map, to_string_pretty};
 
 extern crate polylabel;
 use polylabel::polylabel;
@@ -99,6 +99,10 @@ fn main() {
        .about("Find optimum label positions for polygons")
        .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding \
         the label position. Defaults to 0.001'")
+       .arg(Arg::with_name("pretty")
+                .help("Pretty-print GeoJSON output")
+                .short("p")
+                .long("pretty"))
        .arg(Arg::with_name("GEOJSON")
                 .help("GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
                  or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon")
@@ -108,6 +112,7 @@ fn main() {
 
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
+    let pprint = command_params.is_present("pretty");
     let res = open_and_parse(&poly);
     if res.is_err() {
         println!("An error occurred: {:?}", res.err().unwrap());
@@ -160,8 +165,13 @@ fn main() {
         };
         if results.is_some() {
             let f = results.unwrap();
-            let serialised = GeoJson::from(f).to_string();
-            println!("{}", serialised);
+            let serialised = GeoJson::from(f);
+            let to_print = if !pprint {
+                serialised.to_string()
+            } else {
+                to_string_pretty(&serialised).unwrap()
+            };
+            println!("{}", to_print);
         } else {
             println!("No valid geometries were found. Please check your input.");
         }

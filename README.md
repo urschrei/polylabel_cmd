@@ -20,7 +20,9 @@ Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
 - Processing of nested `GeometryCollection`s is supported, [but you shouldn't be using those](https://tools.ietf.org/html/rfc7946#section-3.1.8)
 - Non-(`Multi`)`Polygon` geometries are **stripped** from any output.  
 
-It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   
+It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.  
+
+A  `-p` or `--pretty` flag may be set, which will pretty-print the GeoJSON output.   
 
 Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
