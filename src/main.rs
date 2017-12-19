@@ -23,7 +23,7 @@ use polylabel::polylabel;
 extern crate rayon;
 use rayon::prelude::*;
 
-/// Attempt to open a file, read it, and parse it into GeoJSON
+/// Attempt to open a file, read it, and parse it into `GeoJSON`
 fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
     let mut f = File::open(p)?;
     let mut contents = String::new();
@@ -50,7 +50,7 @@ fn label_for_feature(feat: Feature, tolerance: &f32) -> Option<Feature> {
 
 /// Generate a Geometry containing label positions from an input geometry
 /// Input and output geometries are symmetrical.
-/// GeometryCollections are processed recursively, so
+/// `GeometryCollection`s are processed recursively, so
 /// [nested](https://tools.ietf.org/html/rfc7946#section-3.1.8) collections
 /// are successfully processed, but please don't do that.
 fn label_for_geometry(geom: Geometry, tolerance: &f32) -> Option<Geometry> {
