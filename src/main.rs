@@ -131,10 +131,10 @@ fn main() {
                 None => None,
             },
             GeoJson::Geometry(geometry) => match label_for_geometry(geometry, &tolerance) {
-                Some(geometry) => {
+                Some(labelled_geometry) => {
                     let f = Feature {
                         bbox: None,
-                        geometry: label_for_geometry(geometry, &tolerance),
+                        geometry: Some(labelled_geometry),
                         id: None,
                         properties: None,
                         foreign_members: None,
