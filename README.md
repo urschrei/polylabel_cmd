@@ -25,7 +25,7 @@ It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-t
 Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
 - `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
-- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose geometries are `Point`s or `MultiPoint`s.
+- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose collection members are `Point`s or `MultiPoint`s.
 
 Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
 
