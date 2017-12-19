@@ -17,7 +17,7 @@ Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
     - `Polygon` or
     - `MultiPolygon` or
     - `GeometryCollection` containing either or both of the above.
-- Nested `GeometryCollections` are **not** supported
+- Nested `GeometryCollections` have not been tested, [but you shouldn't be using those anyway](https://tools.ietf.org/html/rfc7946#section-3.1.8)
 - Non-(`Multi`)`Polygon` geometries are **stripped** from any output.  
 
 It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.   

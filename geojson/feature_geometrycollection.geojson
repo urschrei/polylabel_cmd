@@ -80,6 +80,13 @@
           ]
         ],
         "type": "Polygon"
+      },
+      {
+        "coordinates": [
+          -96.328125,
+          38.272688535980976
+        ],
+        "type": "Point"
       }
     ],
     "type": "GeometryCollection"
