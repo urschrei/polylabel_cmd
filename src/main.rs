@@ -15,6 +15,9 @@ extern crate geojson;
 use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
+extern crate serde_json;
+use serde_json::{Map};
+
 extern crate polylabel;
 use polylabel::polylabel;
 
@@ -46,7 +49,11 @@ fn label_for_feature(feat: Feature, tolerance: &f32) -> Option<Feature> {
     }
 }
 
-/// Generate a Geometry containing label positions
+/// Generate a Geometry containing label positions from an input geometry
+/// Input and output geometries are symmetrical.  
+/// GeometryCollections are processed recursively, so [nested](https://tools.ietf.org/html/rfc7946#section-3.1.8) collections should
+/// be successfully processed, although this is difficult to test since it appears
+/// that nobody has ever seen one.
 fn label_for_geometry(geom: Geometry, tolerance: &f32) -> Option<Geometry> {
     match geom.value {
         Value::Polygon(_) => Some(Geometry::new(Value::from(&polylabel(
@@ -136,7 +143,7 @@ fn main() {
                         bbox: None,
                         geometry: Some(labelled_geometry),
                         id: None,
-                        properties: None,
+                        properties: Some(Map::new()),
                         foreign_members: None,
                     };
                     Some(FeatureCollection {
