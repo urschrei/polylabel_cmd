@@ -105,7 +105,8 @@ fn main() {
                 .long("pretty"))
        .arg(Arg::with_name("GEOJSON")
                 .help("GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
-                 or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon")
+                 or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon, \
+                 or a GeometryCollection containing (Multi)Polygons.")
                 .index(1)
                 .required(true))
        .get_matches();

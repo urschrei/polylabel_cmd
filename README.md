@@ -3,7 +3,7 @@
 This gives you the `polylabel` command.
 
 ## Use
-Polylabel takes one mandatory argument: valid GeoJSON, containing any 1 of:
+Polylabel takes one mandatory argument: a file containing valid GeoJSON, containing any 1 of:
 
 - a `FeatureCollection` containing `Feature`s which are valid:
     - `Polygon`s or
