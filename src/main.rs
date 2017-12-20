@@ -77,9 +77,9 @@ fn label_for_geometry(geom: Geometry, tolerance: &f32) -> Option<Geometry> {
                 bbox: None,
                 value: Value::GeometryCollection(
                     gc.into_par_iter()
-                        .map(|geom_| {
+                        .map(|collectionitem| {
                             // Recur!
-                            label_for_geometry(geom_, tolerance)
+                            label_for_geometry(collectionitem, tolerance)
                         })
                         .filter_map(|f| f)
                         .collect(),
