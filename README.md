@@ -1,5 +1,5 @@
 # Polylabel_Cmd
-…is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`.  
+…is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`, or download a [binary](#binaries)  
 This gives you the `polylabel` command.
 
 ## Use
@@ -38,7 +38,10 @@ Input geometries are *not* validated. Results from invalid input geometries may 
 Polylabel is fast. Polygons are processed in parallel, using [Rayon](https://github.com/rayon-rs/rayon).
 
 ## Binaries
-Will be available when I set up CI.
+Pre-built, signed binaries are available from [realeases](https://github.com/urschrei/polylabel_cmd/releases/latest). Binaries are available for:
+- macOS (x86_64)
+- Linux (x86_64)
+- Windows (x86_64 and i686)
 
 ## License
 [MIT](license.txt)
