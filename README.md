@@ -1,5 +1,5 @@
 # Polylabel_Cmd
-…is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`, or download a [binary](#binaries)  
+…is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`, or download a [binary](#binaries) and put it on your $PATH.  
 This gives you the `polylabel` command.
 
 ## Use
