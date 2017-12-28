@@ -15,7 +15,7 @@ use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
 extern crate serde_json;
-use serde_json::{Map, to_string_pretty};
+use serde_json::{to_string_pretty, Map};
 
 extern crate polylabel;
 use polylabel::polylabel;
