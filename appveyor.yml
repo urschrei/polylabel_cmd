@@ -62,7 +62,8 @@ artifacts:
 
 before_deploy:
   # NEW Generate artifacts for release
-  - RUSTFLAGS='-C target-feature=+crt-static' cargo rustc --target %TARGET% --release
+  - set RUSTFLAGS='-C target-feature=+crt-static'
+  - cargo rustc --target %TARGET% --release
   - ps: ci\before_deploy_windows.ps1
 
 deploy:
