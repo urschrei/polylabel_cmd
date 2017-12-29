@@ -31,6 +31,54 @@ fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
     Ok(contents.parse::<GeoJson>()?)
 }
 
+/// Generate a FeatureCollection of label positions from an input GeoJson enum 
+fn label_for_geojson(gj: GeoJson, tolerance: &f32) -> Option<FeatureCollection> {
+    match gj {
+        GeoJson::FeatureCollection(collection) => {
+            let processed: Vec<_> = collection
+                .features
+                .into_par_iter()
+                // filter_map will remove any None features
+                .filter_map(|feature| label_for_feature(feature, tolerance))
+                .collect();
+            if processed.is_empty() {
+                None
+            } else {
+                Some(FeatureCollection {
+                    bbox: collection.bbox,
+                    features: processed,
+                    foreign_members: collection.foreign_members,
+                })
+            }
+        }
+        GeoJson::Feature(feature) => match label_for_feature(feature, tolerance) {
+            Some(labelled_feature) => Some(FeatureCollection {
+                bbox: None,
+                features: vec![labelled_feature],
+                foreign_members: None,
+            }),
+            None => None,
+        },
+        GeoJson::Geometry(geometry) => match label_for_geometry(geometry, tolerance) {
+            Some(labelled_geometry) => {
+                let f = Feature {
+                    bbox: None,
+                    geometry: Some(labelled_geometry),
+                    id: None,
+                    properties: Some(Map::new()),
+                    foreign_members: None,
+                };
+                Some(FeatureCollection {
+                    bbox: None,
+                    features: vec![f],
+                    foreign_members: None,
+                })
+            }
+            None => None,
+        },
+    }
+}
+
 /// Generate a Feature containing label positions
 fn label_for_feature(feat: Feature, tolerance: &f32) -> Option<Feature> {
     match feat.geometry {
@@ -120,50 +168,7 @@ fn main() {
         process::exit(1);
     } else {
         let gj = res.unwrap();
-        let results: Option<_> = match gj {
-            GeoJson::FeatureCollection(collection) => {
-                let processed: Vec<_> = collection
-                    .features
-                    .into_par_iter()
-                    // filter_map will remove any None features
-                    .filter_map(|feature| label_for_feature(feature, &tolerance))
-                    .collect();
-                if processed.is_empty() {
-                    None
-                } else {
-                    Some(FeatureCollection {
-                        bbox: collection.bbox,
-                        features: processed,
-                        foreign_members: collection.foreign_members,
-                    })
-                }
-            }
-            GeoJson::Feature(feature) => match label_for_feature(feature, &tolerance) {
-                Some(labelled_feature) => Some(FeatureCollection {
-                    bbox: None,
-                    features: vec![labelled_feature],
-                    foreign_members: None,
-                }),
-                None => None,
-            },
-            GeoJson::Geometry(geometry) => match label_for_geometry(geometry, &tolerance) {
-                Some(labelled_geometry) => {
-                    let f = Feature {
-                        bbox: None,
-                        geometry: Some(labelled_geometry),
-                        id: None,
-                        properties: Some(Map::new()),
-                        foreign_members: None,
-                    };
-                    Some(FeatureCollection {
-                        bbox: None,
-                        features: vec![f],
-                        foreign_members: None,
-                    })
-                }
-                None => None,
-            },
-        };
+        let results: Option<_> = label_for_geojson(gj, &tolerance);
         if results.is_some() {
             let f = results.unwrap();
             let serialised = GeoJson::from(f);
