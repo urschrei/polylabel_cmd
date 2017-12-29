@@ -31,7 +31,7 @@ fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
     Ok(contents.parse::<GeoJson>()?)
 }
 
-/// Generate a FeatureCollection of label positions from an input GeoJson enum 
+/// Generate a FeatureCollection of label positions from an input GeoJson enum
 fn label_for_geojson(gj: GeoJson, tolerance: &f32) -> Option<FeatureCollection> {
     match gj {
         GeoJson::FeatureCollection(collection) => {
@@ -181,5 +181,67 @@ fn main() {
         } else {
             println!("No valid geometries were found. Please check your input.");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{label_for_geojson, open_and_parse};
+    use geojson::{GeoJson};
+    #[test]
+    /// Can a nested GeometryCollection be parsed?
+    fn test_nested_geometrycollection() {
+        let raw_gj = r#"
+        {
+          "features": [
+            {
+              "geometry": {
+                "geometries": [
+                  {
+                    "coordinates": [
+                      2.8125,
+                      -4.0625
+                    ],
+                    "type": "Point"
+                  },
+                  {
+                    "coordinates": [
+                      [
+                        4.375,
+                        -6.125
+                      ],
+                      [
+                        6.890625,
+                        -8.015625
+                      ]
+                    ],
+                    "type": "MultiPoint"
+                  },
+                  {
+                    "geometries": [
+                      {
+                        "coordinates": [
+                          -3.248626708984375,
+                          -4.188140869140625
+                        ],
+                        "type": "Point"
+                      }
+                    ],
+                    "type": "GeometryCollection"
+                  }
+                ],
+                "type": "GeometryCollection"
+              },
+              "properties": {},
+              "type": "Feature"
+            }
+          ],
+          "type": "FeatureCollection"
+        }
+        "#;
+        let correct = raw_gj.parse::<GeoJson>().unwrap();
+        let gj = open_and_parse(&"geojson/geometrycollection_nested.geojson");
+        let fc = label_for_geojson(gj.unwrap(), &0.001).unwrap();
+        assert_eq!(GeoJson::from(fc), correct);
     }
 }
