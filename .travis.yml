@@ -17,7 +17,7 @@ matrix:
   include:
     # STABLE
     - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode9.2
       rust: stable
       env: TARGET=x86_64-apple-darwin
 
