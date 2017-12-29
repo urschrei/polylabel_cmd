@@ -1,6 +1,6 @@
 [package]
 name = "polylabel_cmd"
-version = "0.0.15"
+version = "0.0.16"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A command-line utility for finding optimum polygon label positions"
 readme = "README.md"
