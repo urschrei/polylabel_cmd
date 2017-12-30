@@ -5,24 +5,12 @@
 This gives you the `polylabel` command.
 
 ## Use
-Polylabel takes one mandatory argument: a file containing valid GeoJSON, containing any 1 of:
+Polylabel takes one mandatory argument: a file containing valid GeoJSON, containing Polygons and / or MultiPolygons to be labelled. They can be included as a`Feature` or a `Geometry`, or as part of a`FeatureCollection` or `GeometryCollection` – any valid GeoJSON can be processed.
 
-- a `FeatureCollection` containing `Feature`s which are valid:
-    - `Polygon`s or
-    - `MultiPolygon`s or
-    - `GeometryCollection`s containing either or both of the above, or 
-- a `Feature` containing a valid:
-    - `Polygon` or
-    - `MultiPolygon` or
-    - `GeometryCollection` containing either or both of the above.
-- a `Geometry` which is a valid
-    - `Polygon` or
-    - `MultiPolygon` or
-    - `GeometryCollection` containing either or both of the above.
 - Processing of nested `GeometryCollection`s is supported, [but you shouldn't be using those](https://tools.ietf.org/html/rfc7946#section-3.1.8)
-- Non-(`Multi`)`Polygon` geometries are **stripped** from any output.  
+- Non-(`Multi`)`Polygon` and empty geometries are **stripped** from any output.
 
-It also accepts an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.  
+You may also pass an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.  
 
 A  `-p` or `--pretty` flag may be set, which will pretty-print the GeoJSON output.   
 
