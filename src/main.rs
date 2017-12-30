@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
-use std::process;
-use std::error::Error;
+use std::io::Error as IoErr;
 
 #[macro_use]
 extern crate clap;
@@ -11,7 +10,7 @@ extern crate geo;
 use geo::{MultiPoint, MultiPolygon};
 
 extern crate geojson;
-use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
+use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
 
 extern crate serde_json;
@@ -23,8 +22,31 @@ use polylabel::polylabel;
 extern crate rayon;
 use rayon::prelude::*;
 
+extern crate failure;
+
+#[macro_use]
+extern crate failure_derive;
+
+#[derive(Fail, Debug)]
+enum PolylabelError {
+    #[fail(display = "IO error: {}", _0)] IoError(#[cause] IoErr),
+    #[fail(display = "GeoJSON deserialisation error: {}", _0)] GeojsonError(#[cause] GjErr),
+}
+
+impl From<IoErr> for PolylabelError {
+    fn from(err: IoErr) -> PolylabelError {
+        PolylabelError::IoError(err)
+    }
+}
+
+impl From<GjErr> for PolylabelError {
+    fn from(err: GjErr) -> PolylabelError {
+        PolylabelError::GeojsonError(err)
+    }
+}
+
 /// Attempt to open a file, read it, and parse it into `GeoJSON`
-fn open_and_parse(p: &str) -> Result<GeoJson, Box<Error>> {
+fn open_and_parse(p: &str) -> Result<GeoJson, PolylabelError> {
     let mut f = File::open(p)?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
@@ -163,23 +185,22 @@ fn main() {
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let pprint = command_params.is_present("pretty");
     let res = open_and_parse(&poly);
-    if res.is_err() {
-        println!("An error occurred: {:?}", res.err().unwrap());
-        process::exit(1);
-    } else {
-        let gj = res.unwrap();
-        let results: Option<_> = label_for_geojson(gj, &tolerance);
-        if results.is_some() {
-            let f = results.unwrap();
-            let serialised = GeoJson::from(f);
-            let to_print = if !pprint {
-                serialised.to_string()
+    match res {
+        Err(e) => println!("{}", e),
+        Ok(gj) => {
+            let results: Option<_> = label_for_geojson(gj, &tolerance);
+            if results.is_some() {
+                let f = results.unwrap();
+                let serialised = GeoJson::from(f);
+                let to_print = if !pprint {
+                    serialised.to_string()
+                } else {
+                    to_string_pretty(&serialised).unwrap()
+                };
+                println!("{}", to_print);
             } else {
-                to_string_pretty(&serialised).unwrap()
-            };
-            println!("{}", to_print);
-        } else {
-            println!("No valid geometries were found. Please check your input.");
+                println!("No valid geometries were found. Please check your input.");
+            }
         }
     }
 }
@@ -187,7 +208,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{label_for_geojson, open_and_parse};
-    use geojson::{GeoJson};
+    use geojson::GeoJson;
     #[test]
     /// Can a nested GeometryCollection be parsed?
     fn test_nested_geometrycollection() {
