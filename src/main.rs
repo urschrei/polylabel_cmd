@@ -29,7 +29,8 @@ extern crate failure_derive;
 
 #[derive(Fail, Debug)]
 enum PolylabelError {
-    #[fail(display = "IO error: {}", _0)] IoError(#[cause] IoErr),
+    #[fail(display = "IO error: {}", _0)]
+    IoError(#[cause] IoErr),
     #[fail(display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?", _0)]
     GeojsonError(#[cause] GjErr),
 }
