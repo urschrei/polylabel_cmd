@@ -30,7 +30,8 @@ extern crate failure_derive;
 #[derive(Fail, Debug)]
 enum PolylabelError {
     #[fail(display = "IO error: {}", _0)] IoError(#[cause] IoErr),
-    #[fail(display = "GeoJSON deserialisation error: {}", _0)] GeojsonError(#[cause] GjErr),
+    #[fail(display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?", _0)]
+    GeojsonError(#[cause] GjErr),
 }
 
 impl From<IoErr> for PolylabelError {
@@ -126,15 +127,13 @@ fn label_for_feature(feat: Feature, tolerance: &f32) -> Option<Feature> {
 fn label_for_geometry(geom: Geometry, tolerance: &f32) -> Option<Geometry> {
     match geom.value {
         Value::Polygon(_) => Some(Geometry::new(Value::from(&polylabel(
-            &geom.value.try_into().expect("Unable to convert Polygon"),
+            &geom.value.try_into().ok()?,
             tolerance,
         )))),
         // How to iterate over the Polygons in a GeoJson MultiPolygon?
         Value::MultiPolygon(_) => {
             // MultiPolygons map to MultiPoints
-            let mp: MultiPolygon<_> = geom.value
-                .try_into()
-                .expect("Unable to convert MultiPolygon");
+            let mp: MultiPolygon<_> = geom.value.try_into().ok()?;
             Some(Geometry::new(Value::from(&MultiPoint(
                 mp.0
                     .par_iter()
