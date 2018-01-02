@@ -76,10 +76,7 @@ fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
 /// Process GeoJSON geometries
 fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
     match geom.value {
-        Value::Polygon(_) => label(Some(geom), tolerance),
-        Value::MultiPolygon(_) => {
-            label(Some(geom), tolerance)
-        }
+        Value::Polygon(_) | Value::MultiPolygon(_) => label(Some(geom), tolerance),
         Value::GeometryCollection(ref mut collection) => {
             // GeometryCollections contain other Geometry types, and can nest
             // we deal with this by recursively processing each geometry
@@ -126,9 +123,7 @@ fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
                 // move label positions into geometry
                 Value::from(&mp)
             }
-            _ => {
-                replace(&mut gmt.value, Value::from(&fake_polygon))
-            }
+            _ => replace(&mut gmt.value, Value::from(&fake_polygon)),
         }
     }
 }
@@ -160,6 +155,29 @@ fn main() {
         Err(e) => println!("{}", e),
         Ok(mut gj) => {
             process_geojson(&mut gj, &tolerance);
+            // We always return a FeatureCollection
+            // This can allocate, but there's no way around that
+            gj = match gj {
+                GeoJson::FeatureCollection(fc) => GeoJson::FeatureCollection(fc),
+                GeoJson::Feature(f) => GeoJson::FeatureCollection(FeatureCollection {
+                    bbox: None,
+                    features: vec![f],
+                    foreign_members: None,
+                }),
+                GeoJson::Geometry(g) => GeoJson::FeatureCollection(FeatureCollection {
+                    bbox: None,
+                    features: vec![
+                        Feature {
+                            bbox: None,
+                            geometry: Some(g),
+                            id: None,
+                            properties: Some(Map::new()),
+                            foreign_members: None,
+                        },
+                    ],
+                    foreign_members: None,
+                }),
+            };
             let to_print = if !pprint {
                 gj.to_string()
             } else {
