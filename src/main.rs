@@ -127,8 +127,7 @@ fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
                 Value::from(&mp)
             }
             _ => {
-                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
-                intermediate
+                replace(&mut gmt.value, Value::from(&fake_polygon))
             }
         }
     }
