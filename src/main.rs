@@ -1,13 +1,14 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Error as IoErr;
+use std::mem::replace;
 
 #[macro_use]
 extern crate clap;
 use clap::{App, Arg};
 
 extern crate geo;
-use geo::{MultiPoint, MultiPolygon};
+use geo::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
 
 extern crate geojson;
 use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
@@ -29,8 +30,7 @@ extern crate failure_derive;
 
 #[derive(Fail, Debug)]
 enum PolylabelError {
-    #[fail(display = "IO error: {}", _0)]
-    IoError(#[cause] IoErr),
+    #[fail(display = "IO error: {}", _0)] IoError(#[cause] IoErr),
     #[fail(display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?", _0)]
     GeojsonError(#[cause] GjErr),
 }
@@ -55,110 +55,81 @@ fn open_and_parse(p: &str) -> Result<GeoJson, PolylabelError> {
     Ok(contents.parse::<GeoJson>()?)
 }
 
-/// Generate a FeatureCollection of label positions from an input GeoJson enum
-fn label_for_geojson(gj: GeoJson, tolerance: &f32) -> Option<FeatureCollection> {
-    match gj {
-        GeoJson::FeatureCollection(collection) => {
-            let processed: Vec<_> = collection
-                .features
-                .into_par_iter()
-                // filter_map will remove any None features
-                .filter_map(|feature| label_for_feature(feature, tolerance))
-                .collect();
-            if processed.is_empty() {
-                None
-            } else {
-                Some(FeatureCollection {
-                    bbox: collection.bbox,
-                    features: processed,
-                    foreign_members: collection.foreign_members,
-                })
+/// Process top-level GeoJSON items
+fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
+    match *gj {
+        GeoJson::FeatureCollection(ref mut collection) => collection.features
+            // Iterate in parallel when appropriate
+            .par_iter_mut()
+            // Only pass on non-empty geometries, doing so by reference
+            .filter_map(|feature| feature.geometry.as_mut())
+            .for_each(|geometry| match_geometry(geometry, tolerance)),
+        GeoJson::Feature(ref mut feature) => {
+            if let Some(ref mut geometry) = feature.geometry {
+                match_geometry(geometry, tolerance)
             }
         }
-        GeoJson::Feature(feature) => match label_for_feature(feature, tolerance) {
-            Some(labelled_feature) => Some(FeatureCollection {
-                bbox: None,
-                features: vec![labelled_feature],
-                foreign_members: None,
-            }),
-            None => None,
-        },
-        GeoJson::Geometry(geometry) => match label_for_geometry(geometry, tolerance) {
-            Some(labelled_geometry) => {
-                let f = Feature {
-                    bbox: None,
-                    geometry: Some(labelled_geometry),
-                    id: None,
-                    properties: Some(Map::new()),
-                    foreign_members: None,
-                };
-                Some(FeatureCollection {
-                    bbox: None,
-                    features: vec![f],
-                    foreign_members: None,
-                })
-            }
-            None => None,
-        },
+        GeoJson::Geometry(ref mut geometry) => match_geometry(geometry, tolerance),
     }
 }
 
-/// Generate a Feature containing label positions
-fn label_for_feature(feat: Feature, tolerance: &f32) -> Option<Feature> {
-    match feat.geometry {
-        Some(geom) => match label_for_geometry(geom, tolerance) {
-            Some(ngeom) => Some(Feature {
-                bbox: feat.bbox,
-                geometry: Some(ngeom),
-                id: feat.id,
-                properties: feat.properties,
-                foreign_members: feat.foreign_members,
-            }),
-            _ => None,
-        },
-        None => None,
-    }
-}
-
-/// Generate a Geometry containing label positions from an input geometry
-/// Input and output geometries are symmetrical.
-/// `GeometryCollection`s are processed recursively, so
-/// [nested](https://tools.ietf.org/html/rfc7946#section-3.1.8) collections
-/// are successfully processed, but please don't do that.
-fn label_for_geometry(geom: Geometry, tolerance: &f32) -> Option<Geometry> {
+/// Process GeoJSON geometries
+fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
     match geom.value {
-        Value::Polygon(_) => Some(Geometry::new(Value::from(&polylabel(
-            &geom.value.try_into().ok()?,
-            tolerance,
-        )))),
-        // How to iterate over the Polygons in a GeoJson MultiPolygon?
+        Value::Polygon(_) => label(Some(geom), tolerance),
         Value::MultiPolygon(_) => {
-            // MultiPolygons map to MultiPoints
-            let mp: MultiPolygon<_> = geom.value.try_into().ok()?;
-            Some(Geometry::new(Value::from(&MultiPoint(
-                mp.0
-                    .par_iter()
-                    .map(|poly| polylabel(poly, tolerance))
-                    .collect(),
-            ))))
+            label(Some(geom), tolerance)
         }
-        Value::GeometryCollection(gc) => {
-            Some(Geometry {
-                bbox: None,
-                value: Value::GeometryCollection(
-                    gc.into_par_iter()
-                        .map(|collectionitem| {
-                            // Recur!
-                            label_for_geometry(collectionitem, tolerance)
-                        })
-                        .filter_map(|f| f)
+        Value::GeometryCollection(ref mut collection) => {
+            // GeometryCollections contain other Geometry types, and can nest
+            // we deal with this by recursively processing each geometry
+            collection
+                .par_iter_mut()
+                .for_each(|geometry| match_geometry(geometry, tolerance))
+        }
+        // Point, LineString, and their Multi– counterparts
+        _ => (),
+    }
+}
+
+/// Generate a label position for a (Multi)Polygon
+fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
+    if let Some(gmt) = geom {
+        // construct a fake empty Polygon – this doesn't allocate
+        let v1: Vec<Point<f32>> = Vec::new();
+        let ls2 = Vec::new();
+        let fake_polygon: Polygon<f32> = Polygon::new(LineString::from(v1), ls2);
+        // convert it into a Value, and swap it for our actual (Multi)Polygon
+        gmt.value = match gmt.value {
+            Value::Polygon(_) => {
+                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
+                let mut geo_type: Polygon<f32> = intermediate
+                    .try_into()
+                    .expect("Failed to convert a Polygon");
+                // generate a label position Point for it, and put it back
+                Value::from(&polylabel(&geo_type, tolerance))
+            }
+            Value::MultiPolygon(_) => {
+                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
+                let mut geo_type: MultiPolygon<f32> = intermediate
+                    .try_into()
+                    .expect("Failed to convert a MultiPolygon");
+                // we allocate here – can we avoid it? idk
+                let mp = MultiPoint(
+                    geo_type
+                        .0
+                        .par_iter()
+                        .map(|polygon| polylabel(polygon, tolerance))
                         .collect(),
-                ),
-                foreign_members: None,
-            })
+                );
+                // move label positions into geometry
+                Value::from(&mp)
+            }
+            _ => {
+                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
+                intermediate
+            }
         }
-        // only (Multi)Polygons or GeometryCollections are allowed
-        _ => None,
     }
 }
 
@@ -187,20 +158,14 @@ fn main() {
     let res = open_and_parse(&poly);
     match res {
         Err(e) => println!("{}", e),
-        Ok(gj) => {
-            let results: Option<_> = label_for_geojson(gj, &tolerance);
-            if results.is_some() {
-                let f = results.unwrap();
-                let serialised = GeoJson::from(f);
-                let to_print = if !pprint {
-                    serialised.to_string()
-                } else {
-                    to_string_pretty(&serialised).unwrap()
-                };
-                println!("{}", to_print);
+        Ok(mut gj) => {
+            process_geojson(&mut gj, &tolerance);
+            let to_print = if !pprint {
+                gj.to_string()
             } else {
-                println!("No valid geometries were found. Please check your input.");
-            }
+                to_string_pretty(&gj).unwrap()
+            };
+            println!("{}", to_print);
         }
     }
 }
