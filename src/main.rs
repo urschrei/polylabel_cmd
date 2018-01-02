@@ -105,16 +105,16 @@ fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
         // convert it into a Value, and swap it for our actual (Multi)Polygon
         gmt.value = match gmt.value {
             Value::Polygon(_) => {
-                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
-                let mut geo_type: Polygon<f32> = intermediate
+                let intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
+                let geo_type: Polygon<f32> = intermediate
                     .try_into()
                     .expect("Failed to convert a Polygon");
                 // generate a label position Point for it, and put it back
                 Value::from(&polylabel(&geo_type, tolerance))
             }
             Value::MultiPolygon(_) => {
-                let mut intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
-                let mut geo_type: MultiPolygon<f32> = intermediate
+                let intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
+                let geo_type: MultiPolygon<f32> = intermediate
                     .try_into()
                     .expect("Failed to convert a MultiPolygon");
                 // we allocate here – can we avoid it? idk
