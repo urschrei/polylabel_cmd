@@ -190,7 +190,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{label_for_geojson, open_and_parse};
+    use super::{open_and_parse, process_geojson};
     use geojson::GeoJson;
     #[test]
     /// Can a nested GeometryCollection be parsed?
@@ -244,8 +244,8 @@ mod tests {
         }
         "#;
         let correct = raw_gj.parse::<GeoJson>().unwrap();
-        let gj = open_and_parse(&"geojson/geometrycollection_nested.geojson");
-        let fc = label_for_geojson(gj.unwrap(), &0.001).unwrap();
-        assert_eq!(GeoJson::from(fc), correct);
+        let mut gj = open_and_parse(&"geojson/geometrycollection_nested.geojson").unwrap();
+        process_geojson(&mut gj, &0.001);
+        assert_eq!(gj, correct);
     }
 }
