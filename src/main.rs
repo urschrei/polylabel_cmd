@@ -96,6 +96,7 @@ fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
 fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
     if let Some(gmt) = geom {
         // construct a fake empty Polygon – this doesn't allocate
+        // TODO if Geo geometry validation lands, this will fail
         let v1: Vec<Point<f32>> = Vec::new();
         let ls2 = Vec::new();
         let fake_polygon: Polygon<f32> = Polygon::new(LineString::from(v1), ls2);
