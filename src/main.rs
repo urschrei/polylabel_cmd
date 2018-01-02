@@ -56,11 +56,10 @@ fn open_and_parse(p: &str) -> Result<GeoJson, PolylabelError> {
     Ok(contents.parse::<GeoJson>()?)
 }
 
-/// Process top-level GeoJSON items
+/// Process top-level `GeoJSON` items
 fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
     match *gj {
         GeoJson::FeatureCollection(ref mut collection) => collection.features
-            // Iterate in parallel when appropriate
             .par_iter_mut()
             // Only pass on non-empty geometries, doing so by reference
             .filter_map(|feature| feature.geometry.as_mut())
@@ -74,7 +73,7 @@ fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
     }
 }
 
-/// Process GeoJSON geometries
+/// Process `GeoJSON` geometries
 fn label_geometry(geom: &mut Geometry, tolerance: &f32) {
     match geom.value {
         Value::Polygon(_) | Value::MultiPolygon(_) => label_value(Some(geom), tolerance),
@@ -133,7 +132,7 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: &f32) {
     }
 }
 
-/// Convert any GeoJson enum variant into a GeoJson::FeatureCollection
+/// Convert any `GeoJson` enum variant into a `GeoJson::FeatureCollection`
 fn build_featurecollection(gj: GeoJson) -> GeoJson {
     match gj {
         GeoJson::FeatureCollection(fc) => GeoJson::FeatureCollection(fc),
