@@ -64,26 +64,26 @@ fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
             .par_iter_mut()
             // Only pass on non-empty geometries, doing so by reference
             .filter_map(|feature| feature.geometry.as_mut())
-            .for_each(|geometry| match_geometry(geometry, tolerance)),
+            .for_each(|geometry| label_geometry(geometry, tolerance)),
         GeoJson::Feature(ref mut feature) => {
             if let Some(ref mut geometry) = feature.geometry {
-                match_geometry(geometry, tolerance)
+                label_geometry(geometry, tolerance)
             }
         }
-        GeoJson::Geometry(ref mut geometry) => match_geometry(geometry, tolerance),
+        GeoJson::Geometry(ref mut geometry) => label_geometry(geometry, tolerance),
     }
 }
 
 /// Process GeoJSON geometries
-fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
+fn label_geometry(geom: &mut Geometry, tolerance: &f32) {
     match geom.value {
-        Value::Polygon(_) | Value::MultiPolygon(_) => label(Some(geom), tolerance),
+        Value::Polygon(_) | Value::MultiPolygon(_) => label_value(Some(geom), tolerance),
         Value::GeometryCollection(ref mut collection) => {
             // GeometryCollections contain other Geometry types, and can nest
             // we deal with this by recursively processing each geometry
             collection
                 .par_iter_mut()
-                .for_each(|geometry| match_geometry(geometry, tolerance))
+                .for_each(|geometry| label_geometry(geometry, tolerance))
         }
         // Point, LineString, and their Multi– counterparts
         // bail out early
@@ -94,8 +94,8 @@ fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
     }
 }
 
-/// Generate a label position for a (Multi)Polygon
-fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
+/// Generate a label position for a (Multi)Polygon Value
+fn label_value(geom: Option<&mut Geometry>, tolerance: &f32) {
     if let Some(gmt) = geom {
         // construct a fake empty Polygon – this doesn't allocate
         // TODO if Geo geometry validation lands, this will fail
@@ -133,7 +133,7 @@ fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
     }
 }
 
-/// convert any GeoJson enum variant into a GeoJson::FeatureCollection
+/// Convert any GeoJson enum variant into a GeoJson::FeatureCollection
 fn build_featurecollection(gj: GeoJson) -> GeoJson {
     match gj {
         GeoJson::FeatureCollection(fc) => GeoJson::FeatureCollection(fc),
