@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Error as IoErr;
 use std::mem::replace;
+use std::process::exit;
 
 #[macro_use]
 extern crate clap;
@@ -85,7 +86,11 @@ fn match_geometry(geom: &mut Geometry, tolerance: &f32) {
                 .for_each(|geometry| match_geometry(geometry, tolerance))
         }
         // Point, LineString, and their Multi– counterparts
-        _ => (),
+        // bail out early
+        _ => {
+            println!("Non-Polygon or MultiPolygon geometries detected. Please remove these before retrying.");
+            exit(1)
+        }
     }
 }
 
@@ -128,6 +133,31 @@ fn label(geom: Option<&mut Geometry>, tolerance: &f32) {
     }
 }
 
+/// convert any GeoJson enum variant into a GeoJson::FeatureCollection
+fn build_featurecollection(gj: GeoJson) -> GeoJson {
+    match gj {
+        GeoJson::FeatureCollection(fc) => GeoJson::FeatureCollection(fc),
+        GeoJson::Feature(f) => GeoJson::FeatureCollection(FeatureCollection {
+            bbox: None,
+            features: vec![f],
+            foreign_members: None,
+        }),
+        GeoJson::Geometry(g) => GeoJson::FeatureCollection(FeatureCollection {
+            bbox: None,
+            features: vec![
+                Feature {
+                    bbox: None,
+                    geometry: Some(g),
+                    id: None,
+                    properties: Some(Map::new()),
+                    foreign_members: None,
+                },
+            ],
+            foreign_members: None,
+        }),
+    }
+}
+
 fn main() {
     let command_params = App::new("polylabel")
        .version(&crate_version!()[..])
@@ -155,29 +185,9 @@ fn main() {
         Err(e) => println!("{}", e),
         Ok(mut gj) => {
             process_geojson(&mut gj, &tolerance);
-            // We always return a FeatureCollection
+            // Always return a FeatureCollection
             // This can allocate, but there's no way around that
-            gj = match gj {
-                GeoJson::FeatureCollection(fc) => GeoJson::FeatureCollection(fc),
-                GeoJson::Feature(f) => GeoJson::FeatureCollection(FeatureCollection {
-                    bbox: None,
-                    features: vec![f],
-                    foreign_members: None,
-                }),
-                GeoJson::Geometry(g) => GeoJson::FeatureCollection(FeatureCollection {
-                    bbox: None,
-                    features: vec![
-                        Feature {
-                            bbox: None,
-                            geometry: Some(g),
-                            id: None,
-                            properties: Some(Map::new()),
-                            foreign_members: None,
-                        },
-                    ],
-                    foreign_members: None,
-                }),
-            };
+            gj = build_featurecollection(gj);
             let to_print = if !pprint {
                 gj.to_string()
             } else {
@@ -190,7 +200,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{open_and_parse, process_geojson};
+    use super::*;
     use geojson::GeoJson;
     #[test]
     /// Can a nested GeometryCollection be parsed?
@@ -246,6 +256,7 @@ mod tests {
         let correct = raw_gj.parse::<GeoJson>().unwrap();
         let mut gj = open_and_parse(&"geojson/geometrycollection_nested.geojson").unwrap();
         process_geojson(&mut gj, &0.001);
+        gj = build_featurecollection(gj);
         assert_eq!(gj, correct);
     }
 }

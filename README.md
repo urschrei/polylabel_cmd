@@ -5,10 +5,10 @@
 This gives you the `polylabel` command.
 
 ## Use
-Polylabel takes one mandatory argument: a file containing valid GeoJSON, which contains Polygons and / or MultiPolygons to be labelled. They can be included as a `Feature,` or a `Geometry`, or as part of a`FeatureCollection` or `GeometryCollection` – any valid GeoJSON can be processed.
+Polylabel takes one mandatory argument: a file containing valid GeoJSON containing Polygons and / or MultiPolygons to be labelled. They can be included as a `Feature,` or a `Geometry`, or a`FeatureCollection` or `GeometryCollection` – you may also mix the two geometries in a `FeatureCollection` or `GeometryCollection`.
 
 - Processing of nested `GeometryCollection`s is supported, [but you shouldn't be using those](https://tools.ietf.org/html/rfc7946#section-3.1.8)
-- Non-(`Multi`)`Polygon` geometries, empty geometries, and invalid geometries are **stripped** from any output.
+- Non-(`Multi`)`Polygon` geometries cannot be processed – their presence will halt further processing.
 
 You may also pass an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.  
 
