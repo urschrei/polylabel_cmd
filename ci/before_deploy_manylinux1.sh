@@ -22,6 +22,7 @@ install_rustup() {
 mk_artifacts() {
     ls $HOME/.cargo/bin
     RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
+    strip /io/target/$TARGET/release/polylabel
 }
 
 mk_tarball() {
@@ -31,7 +32,6 @@ mk_tarball() {
 
     # TODO update this part to copy the artifacts that make sense for your project
     # NOTE All Cargo build artifacts will be under the 'target/$TARGET/{debug,release}'
-
     cp /io/target/$TARGET/release/polylabel $td
 
     pushd $td
