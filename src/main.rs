@@ -3,6 +3,7 @@ use std::io::prelude::*;
 use std::io::Error as IoErr;
 use std::mem::replace;
 use std::process::exit;
+use std::sync::atomic::{AtomicIsize, Ordering};
 
 #[macro_use]
 extern crate clap;
@@ -57,32 +58,32 @@ fn open_and_parse(p: &str) -> Result<GeoJson, PolylabelError> {
 }
 
 /// Process top-level `GeoJSON` items
-fn process_geojson(gj: &mut GeoJson, tolerance: &f32) {
+fn process_geojson(gj: &mut GeoJson, tolerance: &f32, ctr: &AtomicIsize) {
     match *gj {
         GeoJson::FeatureCollection(ref mut collection) => collection.features
             .par_iter_mut()
             // Only pass on non-empty geometries, doing so by reference
             .filter_map(|feature| feature.geometry.as_mut())
-            .for_each(|geometry| label_geometry(geometry, tolerance)),
+            .for_each(|geometry| label_geometry(geometry, tolerance, ctr)),
         GeoJson::Feature(ref mut feature) => {
             if let Some(ref mut geometry) = feature.geometry {
-                label_geometry(geometry, tolerance)
+                label_geometry(geometry, tolerance, ctr)
             }
         }
-        GeoJson::Geometry(ref mut geometry) => label_geometry(geometry, tolerance),
+        GeoJson::Geometry(ref mut geometry) => label_geometry(geometry, tolerance, ctr),
     }
 }
 
 /// Process `GeoJSON` geometries
-fn label_geometry(geom: &mut Geometry, tolerance: &f32) {
+fn label_geometry(geom: &mut Geometry, tolerance: &f32, ctr: &AtomicIsize) {
     match geom.value {
-        Value::Polygon(_) | Value::MultiPolygon(_) => label_value(Some(geom), tolerance),
+        Value::Polygon(_) | Value::MultiPolygon(_) => label_value(Some(geom), tolerance, ctr),
         Value::GeometryCollection(ref mut collection) => {
             // GeometryCollections contain other Geometry types, and can nest
             // we deal with this by recursively processing each geometry
             collection
                 .par_iter_mut()
-                .for_each(|geometry| label_geometry(geometry, tolerance))
+                .for_each(|geometry| label_geometry(geometry, tolerance, ctr))
         }
         // Point, LineString, and their Multi– counterparts
         // bail out early
@@ -94,7 +95,7 @@ fn label_geometry(geom: &mut Geometry, tolerance: &f32) {
 }
 
 /// Generate a label position for a (Multi)Polygon Value
-fn label_value(geom: Option<&mut Geometry>, tolerance: &f32) {
+fn label_value(geom: Option<&mut Geometry>, tolerance: &f32, ctr: &AtomicIsize) {
     if let Some(gmt) = geom {
         // construct a fake empty Polygon – this doesn't allocate
         // TODO if Geo geometry validation lands, this will fail
@@ -108,6 +109,8 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: &f32) {
                 let geo_type: Polygon<f32> = intermediate
                     .try_into()
                     .expect("Failed to convert a Polygon");
+                // bump the Polygon counter
+                ctr.store(ctr.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
                 // generate a label position Point for it, and put it back
                 Value::from(&polylabel(&geo_type, tolerance))
             }
@@ -121,7 +124,12 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: &f32) {
                     geo_type
                         .0
                         .par_iter()
-                        .map(|polygon| polylabel(polygon, tolerance))
+                        .map(|polygon| {
+                            // bump the Polygon counter
+                            ctr.store(ctr.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+                            // generate a label position
+                            polylabel(polygon, tolerance)
+                        })
                         .collect(),
                 );
                 // move label positions into geometry
@@ -183,7 +191,8 @@ fn main() {
     match res {
         Err(e) => println!("{}", e),
         Ok(mut gj) => {
-            process_geojson(&mut gj, &tolerance);
+            let ctr = AtomicIsize::new(0);
+            process_geojson(&mut gj, &tolerance, &ctr);
             // Always return a FeatureCollection
             // This can allocate, but there's no way around that
             gj = build_featurecollection(gj);
@@ -192,6 +201,10 @@ fn main() {
             } else {
                 to_string_pretty(&gj).unwrap()
             };
+            println!(
+                "Processing complete. Labelled {} Polygons",
+                ctr.load(Ordering::Relaxed)
+            );
             println!("{}", to_print);
         }
     }
