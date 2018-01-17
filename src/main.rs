@@ -28,6 +28,7 @@ use rayon::prelude::*;
 extern crate failure;
 
 extern crate console;
+use console::{style, user_attended};
 
 #[macro_use]
 extern crate failure_derive;
@@ -203,10 +204,10 @@ fn main() {
             } else {
                 to_string_pretty(&gj).unwrap()
             };
-            if console::user_attended() {
+            if user_attended() {
                 println!(
-                    "Processing complete. Labelled {} Polygons",
-                    ctr.load(Ordering::Relaxed)
+                    "Processing complete. Labelled {} Polygons\n",
+                    style(&ctr.load(Ordering::Relaxed).to_string()).red()
                 );
         }
             println!("{}", to_print);
