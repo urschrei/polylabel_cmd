@@ -271,7 +271,8 @@ mod tests {
         "#;
         let correct = raw_gj.parse::<GeoJson>().unwrap();
         let mut gj = open_and_parse(&"geojson/geometrycollection_nested.geojson").unwrap();
-        process_geojson(&mut gj, &0.001);
+        let ctr = AtomicIsize::new(0);
+        process_geojson(&mut gj, &0.001, &ctr);
         gj = build_featurecollection(gj);
         assert_eq!(gj, correct);
     }
