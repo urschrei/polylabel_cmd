@@ -27,6 +27,8 @@ use rayon::prelude::*;
 
 extern crate failure;
 
+extern crate console;
+
 #[macro_use]
 extern crate failure_derive;
 
@@ -201,10 +203,12 @@ fn main() {
             } else {
                 to_string_pretty(&gj).unwrap()
             };
-            println!(
-                "Processing complete. Labelled {} Polygons",
-                ctr.load(Ordering::Relaxed)
-            );
+            if console::user_attended() {
+                println!(
+                    "Processing complete. Labelled {} Polygons",
+                    ctr.load(Ordering::Relaxed)
+                );
+        }
             println!("{}", to_print);
         }
     }
