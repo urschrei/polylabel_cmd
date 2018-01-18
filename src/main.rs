@@ -199,13 +199,12 @@ fn main() {
     let res = open_and_parse(&poly);
     sp.finish_and_clear();
     let sp2 = ProgressBar::new_spinner();
-    sp2.set_message("Labelling Polygon(s)");
+    sp2.set_message("Labelling…");
     sp2.enable_steady_tick(1);
     match res {
         Err(e) => println!("{}", e),
         Ok(mut gj) => {
             let ctr = AtomicIsize::new(0);
-            // let mut mp = MultiProgress::new()
             process_geojson(&mut gj, &tolerance, &ctr);
             // Always return a FeatureCollection
             // This can allocate, but there's no way around that
@@ -217,9 +216,12 @@ fn main() {
                 to_string_pretty(&gj).unwrap()
             };
             if user_attended() {
+                let labelled = ctr.load(Ordering::Relaxed);
+                let p = if labelled == 1 { "Polygon" } else { "Polygons" };
                 println!(
-                    "Processing complete. Labelled {} Polygons\n",
-                    style(&ctr.load(Ordering::Relaxed).to_string()).red()
+                    "Processing complete. Labelled {} {}\n",
+                    style(&labelled.to_string()).red(),
+                    p
                 );
             }
             println!("{}", to_print);
