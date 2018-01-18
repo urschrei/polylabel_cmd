@@ -11,11 +11,12 @@ Polylabel takes one mandatory argument: a file containing valid GeoJSON containi
 - Empty geometries or collections will be left unaltered
 - Non-(`Multi`)`Polygon` geometries cannot be processed – their presence will halt further processing.
 
-You may also pass an optional `-t` or `--tolerance` switch, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate.  
+You may also pass:
+- `-t` or `--tolerance`, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate
+- `-p` or `--pretty`, which will pretty-print the GeoJSON output
+- `-s` or `--stats-only`, which will output the number of labelled polygons, but will *not* output GeoJSON.
 
-A  `-p` or `--pretty` flag may be set, which will pretty-print the GeoJSON output.   
-
-Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
+Irrespective of input, output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
 - `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
 - `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose collection members are `Point`s or `MultiPoint`s.
@@ -23,7 +24,7 @@ Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its c
 Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
 
 ### Progress
-If you aren't piping the output of the command to a file, `polylabel` will display progress of the parsing and labelling steps in the terminal.
+If you aren't piping the output of the command to a file, `polylabel` will display progress of the parsing and labelling steps in the terminal, as well as a final count of the labelled polygons.
 
 ## Validity
 While the structure of the input GeoJSON is validated, individual geometries are *not* validated in the DE-9IM sense. If they self-intersect, have open rings etc., results are not guaranteed to be correct.

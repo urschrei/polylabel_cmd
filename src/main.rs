@@ -182,6 +182,10 @@ fn main() {
                 .help("Pretty-print GeoJSON output")
                 .short("p")
                 .long("pretty"))
+       .arg(Arg::with_name("statsonly")
+                .help("Label polygons, but only print stats")
+                .short("s")
+                .long("stats-only"))
        .arg(Arg::with_name("GEOJSON")
                 .help("GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
                  or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon, \
@@ -193,6 +197,7 @@ fn main() {
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let pprint = command_params.is_present("pretty");
+    let statsonly = command_params.is_present("statsonly");
     let sp = ProgressBar::new_spinner();
     sp.set_message("Parsing GeoJSON");
     sp.enable_steady_tick(1);
@@ -208,7 +213,9 @@ fn main() {
             process_geojson(&mut gj, &tolerance, &ctr);
             // Always return a FeatureCollection
             // This can allocate, but there's no way around that
-            gj = build_featurecollection(gj);
+            if !statsonly {
+                gj = build_featurecollection(gj);
+            }
             sp2.finish_and_clear();
             let to_print = if !pprint {
                 gj.to_string()
@@ -224,7 +231,9 @@ fn main() {
                     p
                 );
             }
-            println!("{}", to_print);
+            if !statsonly {
+                println!("{}", to_print);
+            }
         }
     }
 }
