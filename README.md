@@ -1,6 +1,6 @@
 [![Linux / macOS Build Status](https://travis-ci.org/urschrei/polylabel_cmd.svg?branch=master)](https://travis-ci.org/urschrei/polylabel_cmd) [![Windows Build status](https://ci.appveyor.com/api/projects/status/hfmd4lio8hqc4ig8/branch/master?svg=true)](https://ci.appveyor.com/project/urschrei/polylabel-cmd/branch/master)
  [![Crates Link](https://img.shields.io/crates/v/polylabel_cmd.svg)](https://crates.io/crates/polylabel_cmd)
-# Polylabel_Cmd
+# `polylabel_cmd`
 …is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`, or download a [binary](#binaries) and put it on your $PATH.  
 This gives you the `polylabel` command.
 
@@ -21,6 +21,9 @@ Irrespective of input, successful output is a GeoJSON `FeatureCollection`. Its c
 - `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose collection members are `Point`s or `MultiPoint`s.
 
 Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
+
+### Progress
+If you aren't piping the output of the command to a file, `polylabel` will display progress of the parsing and labelling steps in the terminal.
 
 ## Validity
 While the structure of the input GeoJSON is validated, individual geometries are *not* validated in the DE-9IM sense. If they self-intersect, have open rings etc., results are not guaranteed to be correct.

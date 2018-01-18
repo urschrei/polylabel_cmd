@@ -30,6 +30,9 @@ extern crate failure;
 extern crate console;
 use console::{style, user_attended};
 
+extern crate indicatif;
+use indicatif::ProgressBar;
+
 #[macro_use]
 extern crate failure_derive;
 
@@ -190,15 +193,24 @@ fn main() {
     let tolerance = value_t!(command_params.value_of("TOLERANCE"), f32).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let pprint = command_params.is_present("pretty");
+    let sp = ProgressBar::new_spinner();
+    sp.set_message("Parsing GeoJSON");
+    sp.enable_steady_tick(1);
     let res = open_and_parse(&poly);
+    sp.finish_and_clear();
+    let sp2 = ProgressBar::new_spinner();
+    sp2.set_message("Labelling Polygon(s)");
+    sp2.enable_steady_tick(1);
     match res {
         Err(e) => println!("{}", e),
         Ok(mut gj) => {
             let ctr = AtomicIsize::new(0);
+            // let mut mp = MultiProgress::new()
             process_geojson(&mut gj, &tolerance, &ctr);
             // Always return a FeatureCollection
             // This can allocate, but there's no way around that
             gj = build_featurecollection(gj);
+            sp2.finish_and_clear();
             let to_print = if !pprint {
                 gj.to_string()
             } else {
@@ -209,7 +221,7 @@ fn main() {
                     "Processing complete. Labelled {} Polygons\n",
                     style(&ctr.load(Ordering::Relaxed).to_string()).red()
                 );
-        }
+            }
             println!("{}", to_print);
         }
     }
