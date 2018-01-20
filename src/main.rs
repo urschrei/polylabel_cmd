@@ -116,7 +116,7 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: &f32, ctr: &AtomicIsize) 
                     .try_into()
                     .expect("Failed to convert a Polygon");
                 // bump the Polygon counter
-                ctr.store(ctr.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+                ctr.fetch_add(1, Ordering::SeqCst);
                 // generate a label position Point for it, and put it back
                 Value::from(&polylabel(&geo_type, tolerance))
             }
@@ -132,7 +132,7 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: &f32, ctr: &AtomicIsize) 
                         .par_iter()
                         .map(|polygon| {
                             // bump the Polygon counter
-                            ctr.store(ctr.load(Ordering::Relaxed) + 1, Ordering::Relaxed);
+                            ctr.fetch_add(1, Ordering::SeqCst);
                             // generate a label position
                             polylabel(polygon, tolerance)
                         })
