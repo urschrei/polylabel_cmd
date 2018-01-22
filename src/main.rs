@@ -224,11 +224,10 @@ fn main() {
             };
             if user_attended() {
                 let labelled = ctr.load(Ordering::Relaxed);
-                let p = if labelled == 1 { "Polygon" } else { "Polygons" };
                 println!(
                     "Processing complete. Labelled {} {}\n",
                     style(&labelled.to_string()).red(),
-                    p
+                    if labelled == 1 { "Polygon" } else { "Polygons" }
                 );
             }
             if !statsonly {
