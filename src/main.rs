@@ -176,8 +176,14 @@ fn main() {
        .version(&crate_version!()[..])
        .author("Stephan Hügel <urschrei@gmail.com>")
        .about("Find optimum label positions for polygons")
-       .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding \
-        the label position. Defaults to 0.001'")
+       // .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding \
+       //  the label position. Defaults to 0.001'")
+       .arg(Arg::with_name("tolerance")
+                .takes_value(true)
+                .help("Set a tolerance for finding \
+        the label position. Defaults to 0.001")
+                .short("t")
+                .long("tolerance"))
        .arg(Arg::with_name("pretty")
                 .help("Pretty-print GeoJSON output")
                 .short("p")
@@ -194,7 +200,7 @@ fn main() {
                 .required(true))
        .get_matches();
 
-    let tolerance = value_t!(command_params.value_of("TOLERANCE"), f64).unwrap_or(0.001);
+    let tolerance = value_t!(command_params.value_of("tolerance"), f64).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
     let pprint = command_params.is_present("pretty");
     let statsonly = command_params.is_present("statsonly");
