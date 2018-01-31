@@ -300,4 +300,28 @@ mod tests {
         gj = build_featurecollection(gj);
         assert_eq!(gj, correct);
     }
+    #[test]
+    /// London geometry
+    fn test_london() {
+        let raw_gj = r#"
+            {
+            "type": "FeatureCollection",
+            "features": [
+            {
+                "type": "Feature",
+                "properties": {},
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [-0.455568164459203567, 51.54848888202886]
+                }
+            }
+            ]
+            }
+        "#;
+        let correct = raw_gj.parse::<GeoJson>().unwrap();
+        let mut gj = open_and_parse(&"geojson/london_polygon.geojson").unwrap();
+        let ctr = AtomicIsize::new(0);
+        process_geojson(&mut gj, &0.001, &ctr);
+        assert_eq!(gj, correct);
+    }
 }
