@@ -33,7 +33,7 @@ If you aren't piping the output of the command to a file, `polylabel` will displ
 While the structure of the input GeoJSON is validated, individual geometries are *not* validated in the DE-9IM sense. If they self-intersect, have open rings etc., results are not guaranteed to be correct.
 
 ## Speed
-Polylabel is fast. Polygons are processed in parallel, using [Rayon](https://github.com/rayon-rs/rayon). Higher tolerances will result in slower processing.
+It runs ~10x faster than the [NPM](https://www.npmjs.com/package/geojson-polygon-labels) package. Polygons are processed in parallel, using [Rayon](https://github.com/rayon-rs/rayon). Note that higher tolerances will result in slower processing.
 
 ## Binaries
 Pre-built binaries are available from [releases](https://github.com/urschrei/polylabel_cmd/releases/latest). Binaries are available for:
