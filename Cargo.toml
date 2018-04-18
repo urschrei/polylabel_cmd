@@ -24,7 +24,6 @@ indicatif = "0.9.0"
 [[bin]]
 name = "polylabel"
 path = "src/main.rs"
-crate-type = ["bin"]
 
 [profile.release]
 lto = true
