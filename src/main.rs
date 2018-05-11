@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicIsize, Ordering};
 extern crate clap;
 use clap::{App, Arg};
 
-extern crate geo;
-use geo::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
+extern crate geo_types;
+use geo_types::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
 
 extern crate geojson;
 use geojson::conversion::TryInto;
