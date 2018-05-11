@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::prelude::*;
+use std::fs::read_to_string;
 use std::io::Error as IoErr;
 use std::mem::replace;
 use std::process::exit;
@@ -58,9 +57,7 @@ impl From<GjErr> for PolylabelError {
 
 /// Attempt to open a file, read it, and parse it into `GeoJSON`
 fn open_and_parse(p: &str) -> Result<GeoJson, PolylabelError> {
-    let mut f = File::open(p)?;
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)?;
+    let contents = read_to_string(p)?;
     Ok(contents.parse::<GeoJson>()?)
 }
 
