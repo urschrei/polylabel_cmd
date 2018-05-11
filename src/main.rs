@@ -12,8 +12,8 @@ extern crate geo;
 use geo::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
 
 extern crate geojson;
-use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
 use geojson::conversion::TryInto;
+use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
 
 extern crate serde_json;
 use serde_json::{to_string_pretty, Map};
@@ -155,15 +155,13 @@ fn build_featurecollection(gj: GeoJson) -> GeoJson {
         }),
         GeoJson::Geometry(g) => GeoJson::FeatureCollection(FeatureCollection {
             bbox: None,
-            features: vec![
-                Feature {
-                    bbox: None,
-                    geometry: Some(g),
-                    id: None,
-                    properties: Some(Map::new()),
-                    foreign_members: None,
-                },
-            ],
+            features: vec![Feature {
+                bbox: None,
+                geometry: Some(g),
+                id: None,
+                properties: Some(Map::new()),
+                foreign_members: None,
+            }],
             foreign_members: None,
         }),
     }
