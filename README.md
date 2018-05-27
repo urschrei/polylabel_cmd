@@ -2,14 +2,15 @@
  [![Crates Link](https://img.shields.io/crates/v/polylabel_cmd.svg)](https://crates.io/crates/polylabel_cmd)
 # `polylabel_cmd`
 …is the command-line version of [Polylabel](https://github.com/urschrei/polylabel-rs). Install it using `cargo install polylabel_cmd`, or download a [binary](#binaries) and put it on your $PATH.  
-This gives you the `polylabel` command.
+This provides the `polylabel` command.
 
 ## Use
 Polylabel takes one mandatory argument: a file containing valid GeoJSON containing Polygons and / or MultiPolygons to be labelled. They can be included as a `Feature,` or a `Geometry`, or a`FeatureCollection` or `GeometryCollection` – you may also mix the two geometries in a `FeatureCollection` or `GeometryCollection`.
 
 - Processing of nested `GeometryCollection`s is supported, [but you shouldn't be using those](https://tools.ietf.org/html/rfc7946#section-3.1.8)
 - Empty geometries or collections will be left unaltered
-- Non-(`Multi`)`Polygon` geometries cannot be processed – their presence will halt further processing.
+- Non Multi(Polygon) geometries will be left unaltered
+- All properties will be left unaltered
 
 You may also pass:
 - `-t` or `--tolerance`, allowing you to fine-tune the tolerance from the default `0.001`. Smaller tolerances take longer to calculate
@@ -19,7 +20,8 @@ You may also pass:
 Irrespective of input, output is a GeoJSON `FeatureCollection`. Its contents depend on the input geometry:
 - `Polygon`: The `FeatureCollection` contains `Point` `Feature`s
 - `MultiPolygon`: The `FeatureCollection` contains `MultiPoint` `Feature`s
-- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose collection members are `Point`s or `MultiPoint`s.
+- `GeometryCollection`: The `FeatureCollection` contains `GeometryCollection` `Feature`s whose collection members are `Point`s or `MultiPoint`s
+- Other geometries are included in one the above outputs, but are otherwise left unaltered.
 
 Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
 

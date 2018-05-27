@@ -1,7 +1,6 @@
 use std::fs::read_to_string;
 use std::io::Error as IoErr;
 use std::mem::replace;
-use std::process::exit;
 use std::sync::atomic::{AtomicIsize, Ordering};
 
 #[macro_use]
@@ -91,10 +90,7 @@ fn label_geometry(geom: &mut Geometry, tolerance: &f64, ctr: &AtomicIsize) {
         }
         // Point, LineString, and their Multi– counterparts
         // bail out early
-        _ => {
-            println!("Non-Polygon or MultiPolygon geometries detected. Please remove these before retrying.");
-            exit(1)
-        }
+        _ => {}
     }
 }
 
