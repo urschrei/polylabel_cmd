@@ -1,6 +1,6 @@
 [package]
 name = "polylabel_cmd"
-version = "1.2.1"
+version = "1.2.2"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A command-line utility for finding optimum polygon label positions"
 readme = "README.md"
@@ -10,13 +10,13 @@ license = "MIT"
 exclude = ["geojson/*"]
 
 [dependencies]
-geo-types = "0.1.0"
-geojson = "0.11.0"
-polylabel = "1.1.0"
-clap = "2.31.1"
-serde_json = "1.0.18"
+geo-types = "0.2.0"
+geojson = "0.12.0"
+polylabel = "1.2.0"
+clap = "2.32.0"
+serde_json = "1.0.26"
 rayon = "1.0.1"
-failure = "0.1.1"
+failure = "0.1.2"
 failure_derive = "0.1.1"
 console = "0.6.1"
 indicatif = "0.9.0"
