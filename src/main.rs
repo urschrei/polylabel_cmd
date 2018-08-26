@@ -39,7 +39,10 @@ extern crate failure_derive;
 enum PolylabelError {
     #[fail(display = "IO error: {}", _0)]
     IoError(#[cause] IoErr),
-    #[fail(display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?", _0)]
+    #[fail(
+        display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?",
+        _0
+    )]
     GeojsonError(#[cause] GjErr),
 }
 
@@ -92,8 +95,7 @@ fn label_geometry(geom: &mut Geometry, tolerance: f64, ctr: &AtomicIsize) {
                 .par_iter_mut()
                 .for_each(|geometry| label_geometry(geometry, tolerance, ctr))
         }
-        // Point, LineString, and their Multi– counterparts
-        // bail out early
+        // Any other geometry: leave unchanged
         _ => {}
     }
 }
@@ -133,8 +135,7 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                             ctr.fetch_add(1, Ordering::SeqCst);
                             // generate a label position
                             polylabel(polygon, &tolerance)
-                        })
-                        .collect(),
+                        }).collect(),
                 );
                 // move label positions into geometry
                 Value::from(&mp)
@@ -172,8 +173,6 @@ fn main() {
        .version(&crate_version!()[..])
        .author("Stephan Hügel <urschrei@gmail.com>")
        .about("Find optimum label positions for polygons")
-       // .args_from_usage("-t --tolerance=[TOLERANCE] 'Set a tolerance for finding \
-       //  the label position. Defaults to 0.001'")
        .arg(Arg::with_name("tolerance")
                 .takes_value(true)
                 .help("Set a tolerance for finding \

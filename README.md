@@ -26,7 +26,7 @@ Irrespective of input, output is a GeoJSON `FeatureCollection`. Its contents dep
 Output features retain the order of input features / geometries, and input feature properties are mapped to output features where they exist.
 
 ### Accuracy
-Depending upon the dimensions of your polygon(s), you may require a higher tolerance (i.e. a smaller number) than the default. See [here](https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674) for some guidance on the accuracy provided by each decimal place. The GeoJSON spec _recommends_ a maximum of six decimal places, which provides accuracy around 10cm, which translates to `-t 0.000001`, which should be sufficient for applications which don't require survey-quality accuracy.
+Depending upon the dimensions of your polygon(s), you may require a higher tolerance (i.e. a smaller number) than the default. See [here](https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674) for some guidance on the accuracy provided by each decimal place. The GeoJSON spec _recommends_ a maximum of six decimal places, which provides accuracy around 10cm, which translates to `-t 0.000001`. This should be sufficient for applications which don't require survey-quality accuracy.
 
 ### Progress
 If you aren't piping the output of the command to a file, `polylabel` will display progress of the parsing and labelling steps in the terminal, as well as a final count of the labelled polygons.
