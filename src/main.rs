@@ -1,39 +1,19 @@
+use clap::{crate_version, value_t, App, Arg};
+use console::{style, user_attended};
+use failure;
+use failure_derive::Fail;
+use geo_types::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
+use geojson::conversion::TryInto;
+use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
+use indicatif::ProgressBar;
+use polylabel::polylabel;
+use rayon::prelude::*;
+use serde_json::{to_string_pretty, Map};
 use std::fs;
 use std::io::Error as IoErr;
 use std::mem::replace;
 use std::path::Path;
 use std::sync::atomic::{AtomicIsize, Ordering};
-
-#[macro_use]
-extern crate clap;
-use clap::{App, Arg};
-
-extern crate geo_types;
-use geo_types::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
-
-extern crate geojson;
-use geojson::conversion::TryInto;
-use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
-
-extern crate serde_json;
-use serde_json::{to_string_pretty, Map};
-
-extern crate polylabel;
-use polylabel::polylabel;
-
-extern crate rayon;
-use rayon::prelude::*;
-
-extern crate failure;
-
-extern crate console;
-use console::{style, user_attended};
-
-extern crate indicatif;
-use indicatif::ProgressBar;
-
-#[macro_use]
-extern crate failure_derive;
 
 #[derive(Fail, Debug)]
 enum PolylabelError {
@@ -70,7 +50,8 @@ where
 /// Process top-level `GeoJSON` items
 fn process_geojson(gj: &mut GeoJson, tolerance: f64, ctr: &AtomicIsize) {
     match *gj {
-        GeoJson::FeatureCollection(ref mut collection) => collection.features
+        GeoJson::FeatureCollection(ref mut collection) => collection
+            .features
             .par_iter_mut()
             // Only pass on non-empty geometries, doing so by reference
             .filter_map(|feature| feature.geometry.as_mut())
@@ -135,7 +116,8 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                             ctr.fetch_add(1, Ordering::SeqCst);
                             // generate a label position
                             polylabel(polygon, &tolerance)
-                        }).collect(),
+                        })
+                        .collect(),
                 );
                 // move label positions into geometry
                 Value::from(&mp)
@@ -243,7 +225,7 @@ mod tests {
     use super::*;
     use geojson::GeoJson;
     #[test]
-    /// Can a nested GeometryCollection be parsed?
+    // Can a nested GeometryCollection be parsed?
     fn test_nested_geometrycollection() {
         let raw_gj = r#"
         {
@@ -301,7 +283,7 @@ mod tests {
         assert_eq!(gj, correct);
     }
     #[test]
-    /// London geometry
+    // London geometry
     fn test_london() {
         let raw_gj = r#"
             {
