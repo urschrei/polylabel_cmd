@@ -3,13 +3,12 @@ use console::{style, user_attended};
 use failure;
 use failure_derive::Fail;
 use geo_types::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
-use geojson::conversion::TryInto;
 use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
 use indicatif::ProgressBar;
 use polylabel::polylabel;
 use rayon::prelude::*;
 use serde_json::{to_string_pretty, Map};
-use std::fs;
+use std::{convert::TryInto, fs};
 use std::io::Error as IoErr;
 use std::mem::replace;
 use std::path::Path;
@@ -99,7 +98,7 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                 // bump the Polygon counter
                 ctr.fetch_add(1, Ordering::SeqCst);
                 // generate a label position Point for it, and put it back
-                Value::from(&polylabel(&geo_type, &tolerance))
+                Value::from(&polylabel(&geo_type, &tolerance).expect("Couldn't build a label Point"))
             }
             Value::MultiPolygon(_) => {
                 let intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
@@ -109,13 +108,12 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                 // we allocate here – can we avoid it? idk
                 let mp = MultiPoint(
                     geo_type
-                        .0
-                        .par_iter()
+                        .iter()
                         .map(|polygon| {
                             // bump the Polygon counter
                             ctr.fetch_add(1, Ordering::SeqCst);
                             // generate a label position
-                            polylabel(polygon, &tolerance)
+                            polylabel(polygon, &tolerance).expect("Couldn't build a label Point")
                         })
                         .collect(),
                 );
