@@ -8,11 +8,11 @@ use indicatif::ProgressBar;
 use polylabel::polylabel;
 use rayon::prelude::*;
 use serde_json::{to_string_pretty, Map};
-use std::{convert::TryInto, fs};
 use std::io::Error as IoErr;
 use std::mem::replace;
 use std::path::Path;
 use std::sync::atomic::{AtomicIsize, Ordering};
+use std::{convert::TryInto, fs};
 
 #[derive(Fail, Debug)]
 enum PolylabelError {
@@ -98,7 +98,9 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                 // bump the Polygon counter
                 ctr.fetch_add(1, Ordering::SeqCst);
                 // generate a label position Point for it, and put it back
-                Value::from(&polylabel(&geo_type, &tolerance).expect("Couldn't build a label Point"))
+                Value::from(
+                    &polylabel(&geo_type, &tolerance).expect("Couldn't build a label Point"),
+                )
             }
             Value::MultiPolygon(_) => {
                 let intermediate = replace(&mut gmt.value, Value::from(&fake_polygon));
@@ -150,30 +152,42 @@ fn build_featurecollection(gj: GeoJson) -> GeoJson {
 
 fn main() {
     let command_params = App::new("polylabel")
-       .version(&crate_version!()[..])
-       .author("Stephan Hügel <urschrei@gmail.com>")
-       .about("Find optimum label positions for polygons")
-       .arg(Arg::with_name("tolerance")
+        .version(&crate_version!()[..])
+        .author("Stephan Hügel <urschrei@gmail.com>")
+        .about("Find optimum label positions for polygons")
+        .arg(
+            Arg::with_name("tolerance")
                 .takes_value(true)
-                .help("Set a tolerance for finding \
-        the label position. Defaults to 0.001")
+                .help(
+                    "Set a tolerance for finding \
+        the label position. Defaults to 0.001",
+                )
                 .short("t")
-                .long("tolerance"))
-       .arg(Arg::with_name("pretty")
+                .long("tolerance"),
+        )
+        .arg(
+            Arg::with_name("pretty")
                 .help("Pretty-print GeoJSON output")
                 .short("p")
-                .long("pretty"))
-       .arg(Arg::with_name("statsonly")
+                .long("pretty"),
+        )
+        .arg(
+            Arg::with_name("statsonly")
                 .help("Label polygons, but only print stats")
                 .short("s")
-                .long("stats-only"))
-       .arg(Arg::with_name("GEOJSON")
-                .help("GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
+                .long("stats-only"),
+        )
+        .arg(
+            Arg::with_name("GEOJSON")
+                .help(
+                    "GeoJSON with a FeatureCollection containing one or more (Multi)Polygons, \
                  or a Feature containing a Multi(Polygon), or a Geometry that is a (Multi)Polygon, \
-                 or a GeometryCollection containing (Multi)Polygons.")
+                 or a GeometryCollection containing (Multi)Polygons.",
+                )
                 .index(1)
-                .required(true))
-       .get_matches();
+                .required(true),
+        )
+        .get_matches();
 
     let tolerance = value_t!(command_params.value_of("tolerance"), f64).unwrap_or(0.001);
     let poly = value_t!(command_params.value_of("GEOJSON"), String).unwrap();
