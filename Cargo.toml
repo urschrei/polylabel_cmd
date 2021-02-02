@@ -11,7 +11,7 @@ exclude = ["geojson/*"]
 edition = "2018"
 
 [dependencies]
-geo-types = "0.3.0"
+geo-types = "0.7.0"
 geojson = "0.14.0"
 polylabel = "2.4.0"
 clap = "2.32.0"
