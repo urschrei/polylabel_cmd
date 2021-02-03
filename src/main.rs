@@ -1,49 +1,26 @@
+use anyhow::{Context, Result};
 use clap::{crate_version, value_t, App, Arg};
 use console::{style, user_attended};
-use failure;
-use failure_derive::Fail;
 use geo_types::{LineString, MultiPoint, MultiPolygon, Point, Polygon};
-use geojson::{Error as GjErr, Feature, FeatureCollection, GeoJson, Geometry, Value};
+use geojson::{Feature, FeatureCollection, GeoJson, Geometry, Value};
 use indicatif::ProgressBar;
 use polylabel::polylabel;
 use rayon::prelude::*;
 use serde_json::{to_string_pretty, Map};
-use std::io::Error as IoErr;
 use std::mem::replace;
 use std::path::Path;
 use std::sync::atomic::{AtomicIsize, Ordering};
 use std::{convert::TryInto, fs};
 
-#[derive(Fail, Debug)]
-enum PolylabelError {
-    #[fail(display = "IO error: {}", _0)]
-    IoError(#[cause] IoErr),
-    #[fail(
-        display = "GeoJSON deserialisation error: {}. Is your GeoJSON valid?",
-        _0
-    )]
-    GeojsonError(#[cause] GjErr),
-}
-
-impl From<IoErr> for PolylabelError {
-    fn from(err: IoErr) -> PolylabelError {
-        PolylabelError::IoError(err)
-    }
-}
-
-impl From<GjErr> for PolylabelError {
-    fn from(err: GjErr) -> PolylabelError {
-        PolylabelError::GeojsonError(err)
-    }
-}
-
 /// Attempt to open a file, read it, and parse it into `GeoJSON`
-fn open_and_parse<P>(filename: P) -> Result<GeoJson, PolylabelError>
+fn open_and_parse<P>(filename: P) -> Result<GeoJson>
 where
     P: AsRef<Path>,
 {
-    let s = fs::read_to_string(filename)?;
-    Ok(s.parse::<GeoJson>()?)
+    let s = fs::read_to_string(filename)
+        .with_context(|| "Couldn't open or read from the file. Check that it exists?")?;
+    Ok(s.parse::<GeoJson>()
+        .with_context(|| "Couldn't parse GeoJSON from the file. Check that it's valid?")?)
 }
 
 /// Process top-level `GeoJSON` items
@@ -99,7 +76,8 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                 ctr.fetch_add(1, Ordering::SeqCst);
                 // generate a label position Point for it, and put it back
                 Value::from(
-                    &polylabel(&geo_type, &tolerance).expect("Couldn't build a label Point"),
+                    &polylabel(&geo_type, &tolerance)
+                        .expect("Couldn't build a label Point for the input polygon"),
                 )
             }
             Value::MultiPolygon(_) => {
@@ -115,7 +93,8 @@ fn label_value(geom: Option<&mut Geometry>, tolerance: f64, ctr: &AtomicIsize) {
                             // bump the Polygon counter
                             ctr.fetch_add(1, Ordering::SeqCst);
                             // generate a label position
-                            polylabel(polygon, &tolerance).expect("Couldn't build a label Point")
+                            polylabel(polygon, &tolerance)
+                                .expect("Couldn't build a label Point for the input MultiPolygon")
                         })
                         .collect(),
                 );
@@ -150,7 +129,7 @@ fn build_featurecollection(gj: GeoJson) -> GeoJson {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     let command_params = App::new("polylabel")
         .version(&crate_version!()[..])
         .author("Stephan Hügel <urschrei@gmail.com>")
@@ -202,7 +181,7 @@ fn main() {
     sp2.set_message("Labelling…");
     sp2.enable_steady_tick(1);
     match res {
-        Err(e) => println!("{}", e),
+        Err(e) => Err(e),
         Ok(mut gj) => {
             let ctr = AtomicIsize::new(0);
             process_geojson(&mut gj, tolerance, &ctr);
@@ -228,6 +207,7 @@ fn main() {
             if !statsonly {
                 println!("{}", to_print);
             }
+            Ok(())
         }
     }
 }
