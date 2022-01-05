@@ -13,7 +13,7 @@ edition = "2018"
 [dependencies]
 geo-types = "0.7.0"
 polylabel = "2.4.0"
-clap = "2.32.0"
+clap = "3.0.4"
 serde_json = "1.0.26"
 rayon = "1.0.1"
 anyhow = "1.0"
